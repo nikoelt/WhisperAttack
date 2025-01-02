@@ -74,19 +74,29 @@ pip install openai-whisper sounddevice soundfile pyperclip keyboard wcwidth
 
 ## Step 3: Configure VoiceAttack
 
-You’ll create **two** commands in VoiceAttack—one to **start** recording and one to **stop & transcribe**:
+To trigger the recording and transcription, you'll need to configure two commands in VoiceAttack—one to start recording and one to process the transcription.
+Create the Recording Command
 
-1. **Command 1**: Start Recording
-   - **Press** your chosen joystick or keyboard button.
-   - Action: **Run an Application** → select `recorder.py`.
-   - This launches `recorder.py` to capture your voice in the background.
+-Open VoiceAttack and click the Pencil icon in the top right to enter the profile Edit Mode.
 
-2. **Command 2**: Stop & Transcribe
-   - **Release** that same joystick or keyboard button.
-   - Action: **Run an Application** → select `transcriber.py`.
-   - This stops the recorder (if it’s running), finalizes `sample.wav`, transcribes it with Whisper, and feeds the recognized text to VoiceAttack as a command.
+-Click New Command (top right).
 
-> **Pro Tip**: In the VoiceAttack command editor, under “When I press/release this button,” look for **“Shortcut is invoked only when all keys are released”** to have the second command fire on release.
+-Choose a button or keypress to start the recording (I suggest using a HOTAS button or keypress). Ensure the "When I say" checkbox is unchecked.
+
+-In the section titled "When this command executes, do the following sequence:", click: OTHER > Windows > Run an application, and select recorder.py.
+
+-Click OK to save the command.
+
+Create the Transcriber Command
+
+Repeat the same process, but this time configure it to run the transcriber.py script.
+
+Important: If you want the same button to trigger the recording when pressed and the transcription when released:
+        In the transcriber command, after selecting the controller button, check the box "Shortcut is invoked only when all keys are released".
+
+This ensures that pressing the button starts recording and releasing it runs the transcription.
+
+Click Apply to save everything.
 
 ---
 
