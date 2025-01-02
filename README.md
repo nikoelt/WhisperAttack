@@ -3,7 +3,7 @@
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX/KneeboardWhisper).  
 A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and **@SeaTechNerd83** for helping combine the two approaches.
 
-In short @SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BokoteX code, and then push it into Voice Attack using hradec's code
+In short **@SeaTechNerd83** and I combined the two scripts to run voice commands through Whisper using **BojoteX** code, and then push it into Voice Attack using hradec's code.
 
 ### What’s Different?
 We replaced Google Speech Recognition with **OpenAI Whisper** for **local** (offline) speech recognition. This means:
@@ -13,6 +13,7 @@ We replaced Google Speech Recognition with **OpenAI Whisper** for **local** (off
 
 > **Note:** On first launch, Whisper will auto-download any missing model(s). This can take time. You can also experiment with different model sizes—like `tiny` or `base`—for faster speed (though possibly less accuracy).
 
+> **Performance** The Whisper model should work effectively on any Turing or newer Nvidia architecture card capable of running DCS.
 ---
 
 ## Overview
