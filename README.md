@@ -147,7 +147,7 @@ If you want to paste transcribed text directly into your **DCS Kneeboard**:
    - **Ex:** `C:\Users\(Username)\Downloads\KneeboardWhisperv1\KneeboardWhisper\sample.wav`
    - Edit the `audio_file = r".\sample.wav"` to include the entire directory in **both** the `transcriber.py` and `recorder.py` files
    - **Ex:** `audio_file = r"C:\Users\(Username)\Downloads\KneeboardWhisperv1\KneeboardWhisper\sample.wav"`
-   - Tell Windows to open `transcriber.py` and `recorder.py` with Python 3.11 by right clicking the files; otherwise VoiceAttack may open the files in the text editor when commanded to execute them.
+   - Tell Windows to open `transcriber.py` and `recorder.py` with Python 3.11 by right clicking the files and selecting "Open With"; otherwise VoiceAttack may open the files in the text editor when commanded to execute them.
    
 2.   **Torch Fallback to CPU**  
    - If you see logs saying “Whisper model loaded on CPU,” your GPU might be unavailable or `torch.cuda.is_available()` is `False`. Confirm you installed the CUDA build of PyTorch and have proper GPU drivers.
