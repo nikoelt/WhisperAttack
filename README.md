@@ -13,7 +13,7 @@ We replaced Google Speech Recognition with **OpenAI Whisper** for **local** (off
 
 > **Note:** On first launch, Whisper will auto-download any missing model(s). This can take time. You can also experiment with different model sizes—like `tiny` or `base`—for faster speed (though possibly less accuracy).
 
-> **Performance** The Whisper model should work effectively on any Turing or newer Nvidia architecture card capable of running DCS.
+**Performance** The Whisper model should work effectively on any Turing or newer Nvidia architecture card capable of running DCS.
 ---
 
 ## Overview
