@@ -1,4 +1,4 @@
-# WhisperAI for VoiceAttack - OpenAI Whisper integration for VoiceAttack 
+# OpenAI Whisper integration for VoiceAttack 
 
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX/KneeboardWhisper).  
 A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and **@SeaTechNerd83** for helping combine the two approaches.
