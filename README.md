@@ -142,19 +142,25 @@ If you want to paste transcribed text directly into your **DCS Kneeboard**:
 
 ## Troubleshooting
 
-1. **Torch Fallback to CPU**  
+1. **.\sample.wav not found**
+   - Find the sample.wav file in the KneeboardWhisper folder, and copy the full file path **including** the sample.wav file
+   **Ex:** `C:\Users\(Username)\Downloads\KneeboardWhisperv1\KneeboardWhisper\sample.wav`
+   - Edit the `audio_file = r".\sample.wav"` to include the entire directory in **both** the transcriber.py and recorder.py files
+   - Ex: `audio_file = r"C:\Users\(Username)\Downloads\KneeboardWhisperv1\KneeboardWhisper\sample.wav"`
+   
+2.   **Torch Fallback to CPU**  
    - If you see logs saying “Whisper model loaded on CPU,” your GPU might be unavailable or `torch.cuda.is_available()` is `False`. Confirm you installed the CUDA build of PyTorch and have proper GPU drivers.
 
-2. **VoiceAttack.exe Not Found**  
+3. **VoiceAttack.exe Not Found**  
    - Check that `transcriber.py` has the correct path to `VoiceAttack.exe`, e.g.:  
      ```
      C:\Program Files (x86)\VoiceAttack\VoiceAttack.exe
      ```
 
-3. **No Clipboard Copy**  
+4. **No Clipboard Copy**  
    - Ensure `pyperclip` is installed. Some systems might block or restrict clipboard usage.
 
-4. **DCS Keybind**  
+5. **DCS Keybind**  
    - If you’re not seeing pasted text in DCS, confirm that `CTRL+ALT+P` is actually set in the DCS controls.
 
 ---
