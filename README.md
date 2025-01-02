@@ -1,4 +1,3 @@
-```markdown
 # VoiceAttack + Whisper Transcription Setup
 
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX/KneeboardWhisper).  
