@@ -211,7 +211,7 @@ class WhisperServer:
 ###############################################################################
 def main():
     # Load Whisper model only once
-    model = load_whisper_model(device='GPU', model_size='small')  # or 'base', etc.
+    model = load_whisper_model(device='GPU', model_size='small.en')  # or 'base', etc.
 
     # Create and run the server
     server = WhisperServer(model, device='GPU')
