@@ -90,8 +90,10 @@ python send_command.py stop
 ---
 
 ## Running the Whisper Server
+1. Double click whisper_server.py
 
-1. Open a terminal in the same folder as `whisper_server.py`.
+### Alternatively
+1. Open a terminal in the same folder as `whisper_server.py`. 
 2. Run:
 
 ```bash
@@ -137,14 +139,6 @@ In VoiceAttack, go to **Edit Profile**.
     ```
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
-
-#### Optional "Shutdown" Command
-
-- Pass "shutdown" as the parameter:
-
-    ```
-    "C:\Path\to\send_command.py" shutdown
-    ```
 
 ---
 
