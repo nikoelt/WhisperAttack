@@ -1,177 +1,171 @@
-# OpenAI Whisper integration for VoiceAttack 
+OpenAI Whisper Server for VoiceAttack - WhisperAttack
 
-This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX/KneeboardWhisper).  
-A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and **@SeaTechNerd83** for helping combine the two approaches.
+This is a fork for further integration of KneeboardWhisper by the amazing creator @BojoteX.
+A special thank you goes to hradec, whose original script used Google Voice Recognition, and @SeaTechNerd83 for helping combine the two approaches.
 
-In short **@SeaTechNerd83** and I combined the two scripts to run voice commands through Whisper using **BojoteX** code, and then push it into Voice Attack using hradec's code.
+In short @SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX code, and then push it into Voice Attack using hradec's code. Then to speed this up I unified the codebase into one file, made it run a server which sends commands to VoiceAttack
 
-### What’s Different?
-We replaced Google Speech Recognition with **OpenAI Whisper** for **local** (offline) speech recognition. This means:
-1. **No reliance on online services** (beyond the first-time model download).
-2. **Better accuracy** than older Windows Speech Recognition.
-3. **Ability to leverage your GPU** for much faster transcription.
+This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition (or Google Speech) with a fully offline, GPU-accelerated recognition engine.
+Features
 
-### **Performance** 
-The Whisper model should work effectively on any Turing or newer Nvidia architecture card capable of running DCS.
-> **Note:** On first launch, Whisper will auto-download any missing model(s). This can take time. You can also experiment with different model sizes—like `tiny` or `base`—for faster speed (though possibly less accuracy).
----
+    Single Server Script (whisper_server.py) that:
+        Loads the Whisper model once on GPU or CPU.
+        Records mic audio on demand (via socket commands).
+        Transcribes the .wav file using Whisper.
+        Sends recognized text into VoiceAttack.
+    Simple Client Script (send_command.py) to send “start”, “stop”, or “shutdown” commands to the server.
+    No repeated model loads (faster, especially if you use a larger Whisper model).
+    Push-to-Talk style workflow with VoiceAttack press & release.
 
-## Overview
+Requirements
 
-This guide helps you set up a system to:
-- **Record** your voice in **DCS World** (or any simulator) using **VoiceAttack**.
-- **Transcribe** that audio with **Whisper**.
-- (Optionally) **Paste** the text into the DCS Kneeboard via `CTRL+ALT+P` or any other binding.
+    Python 3.11 (or newer)
+        Install from python.org or the Microsoft Store.
+    VoiceAttack
+        voiceattack.com
+    FFmpeg (must be in your PATH)
+        Needed by Whisper for audio decoding.
+        Install via winget install ffmpeg, Chocolatey (choco install ffmpeg), or from ffmpeg.org.
+    GPU (Optional, but Recommended)
+        Whisper runs faster on an NVIDIA GPU with CUDA.
 
-![Kneeboard Whisper](https://raw.githubusercontent.com/BojoteX/KneeboardWhisper/main/kneeboardwhisper.png)
+1) Install Python Dependencies
 
-1. **`recorder.py`**: Captures your audio into `sample.wav`.
-2. **`transcriber.py`**: Stops the recorder (if needed), runs Whisper locally to transcribe `sample.wav`, copies the text to your clipboard, and sends recognized text as a **VoiceAttack** command.
+Open a terminal and run:
 
----
-
-## Prerequisites
-
-1. **Python 3.11**  
-   - Install from the Microsoft Store or [python.org](https://www.python.org/downloads/).
-2. **VoiceAttack**  
-   - Needed for controlling scripts and issuing commands in your simulator/game.
-3. **DCS World** (optional, if you want to paste transcribed text into kneeboard).
-4. **NVIDIA GPU** (recommended)  
-   - Whisper can run on CPU, but GPU (CUDA) provides a big speed boost.
-
----
-
-## Step 1: Install Python 3.11
-
-1. Open the **Microsoft Store** and install **Python 3.11**, or download from [python.org](https://www.python.org/downloads/).
-2. Verify the installation by opening a command prompt (`Win + R`, type `cmd`) and running:
-
-   ```bash
-   python --version
-   ```
-
-   It should show **Python 3.11.x**.
-
----
-
-## Step 2: Install Required Python Modules
-
-Open a **command prompt** and install the following:
-
-```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu118
-pip install openai-whisper sounddevice soundfile pyperclip keyboard wcwidth
-```
+pip install openai-whisper sounddevice soundfile pyperclip
 
-- **`torch`** from the `cu118` index enables **CUDA** GPU support (if you have an NVIDIA card).
-- **`openai-whisper`** is the local transcription engine.
-- **`sounddevice`** & **`soundfile`** handle audio capture/playback.
-- **`pyperclip`** for copying recognized text to the clipboard.
-- **`keyboard`** for advanced hotkey or automation in scripts.
-- **`wcwidth`** for neat text justification (optional).
+    torch from the cu118 index is for CUDA (adjust if your GPU uses a different toolkit version).
+    openai-whisper is the Whisper engine.
+    sounddevice & soundfile handle audio capture.
+    pyperclip copies recognized text to the clipboard.
 
----
+2) How It Works
 
-## Step 3: Configure VoiceAttack
+    whisper_server.py:
+        On startup, loads the Whisper model (e.g. small) either on GPU or CPU.
+        Opens a socket server at 127.0.0.1:65432.
+        Waits for commands:
+            start → Begin recording to whisper_temp_recording.wav.
+            stop → Stop recording, transcribe with Whisper, copy text to clipboard, send to VoiceAttack.
+            shutdown → Gracefully stops the server.
 
-To trigger the recording and transcription, you'll need to configure two commands in VoiceAttack—one to start recording and one to process the transcription.
-Create the Recording Command
+    send_command.py:
+        Tiny script that takes a command (e.g. start, stop) and sends it to the server’s socket.
+        Example usage:
 
--Open VoiceAttack and click the Pencil icon in the top right to enter the profile Edit Mode.
+        python send_command.py start
+        # speak into your mic...
+        python send_command.py stop
 
--Click New Command (top right).
+        This approach replaces the older “two-script” pattern of recorder.py + transcriber.py.
 
--Choose a button or keypress to start the recording (I suggest using a HOTAS button or keypress). Ensure the "When I say" checkbox is unchecked.
+3) Running the Whisper Server
 
--In the section titled "When this command executes, do the following sequence:", click: OTHER > Windows > Run an application, and select recorder.py.
+    Open a terminal in the same folder as whisper_server.py.
 
--Click OK to save the command.
+    Run:
 
-Create the Transcriber Command
+python whisper_server.py
 
-Repeat the same process, but this time configure it to run the transcriber.py script.
+You’ll see logs like:
 
-Important: If you want the same button to trigger the recording when pressed and the transcription when released:
-        In the transcriber command, after selecting the controller button, check the box "Shortcut is invoked only when all keys are released".
+    2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
+    2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
 
-This ensures that pressing the button starts recording and releasing it runs the transcription.
+    Leave this terminal open. The server must keep running to handle start/stop commands.
 
-Click Apply to save everything.
+4) Configuring VoiceAttack
 
----
+You want VoiceAttack to send the “start” command when you press a button, and “stop” when you release it. That’s a push-to-talk style workflow.
+4.1. Create send_command.py Commands
 
-## Step 4: (Optional) DCS Kneeboard Integration
+    In VoiceAttack, go to Edit Profile.
 
-If you want to paste transcribed text directly into your **DCS Kneeboard**:
+    New Command for “Start Whisper Recording”:
+        When this command executes:
+            Go to Other → Windows → Run an application.
+            Application: point it to your python.exe (or the full path).
+            Parameters:
 
-1. In DCS, bind **`CTRL+ALT+P`** (or any shortcut) to the kneeboard paste function.
-2. By default, the transcribed text is already copied to your clipboard.
-3. Press `CTRL+ALT+P` in-game, or let VoiceAttack trigger it, to paste the text into your kneeboard.
+        "C:\Path\to\send_command.py" start
 
-![Assignments](https://raw.githubusercontent.com/BojoteX/KneeboardWhisper/main/assignments.png)
+        (Optional) “Wait until the launched application exits” can be unchecked if it’s a quick script.
 
----
+Assign a joystick or key press to this command.
 
-## Step 5: Test It
+    For example, “Joystick Button 14 (pressed).”
 
-### Method 1: Manual Terminal Test
+Another Command for “Stop Whisper Recording”:
 
-1. Open two terminals in the folder with your scripts.
-2. In the first terminal:
+    Same steps, except the Parameters is:
 
-   ```bash
-   python recorder.py
-   ```
+        "C:\Path\to\send_command.py" stop
 
-   You can talk into your mic; it records to `sample.wav`.
+        Assign the same joystick button, but in VoiceAttack check “Shortcut is invoked only when released.”
+        This ensures press = “start”, release = “stop.”
 
-3. In the second terminal:
+That’s it! Whenever you press the button, VoiceAttack calls send_command.py start. When you release, it calls send_command.py stop, the server records your mic audio and transcribes it.
+4.2. Optional “Shutdown” Command
 
-   ```bash
-   python transcriber.py --device GPU
-   ```
+If you want a VoiceAttack command to stop whisper_server.py, do the same process but pass "shutdown":
 
-   This stops the recorder, transcribes with Whisper on GPU, copies to clipboard, and calls VoiceAttack with the recognized text.
+"C:\Path\to\send_command.py" shutdown
 
-### Method 2: VoiceAttack
+This tells the server to gracefully exit.
+5) UAC Prompts & Running VoiceAttack as Admin
 
-- **Press** your assigned PTT button → `recorder.py` starts capturing.
-- **Release** the button → `transcriber.py` runs, transcribes, and sends the text to VoiceAttack.
+If you must run VoiceAttack as administrator (for certain games) but get UAC pop-ups each time you call it from a script, you can avoid the prompts by using a Scheduled Task:
 
----
+    Create a new Task in Task Scheduler:
+        “Run with highest privileges.”
+        Action: “Start a program,” pointing to VoiceAttack.exe.
+        Uncheck “Run as admin” in the EXE’s file properties (or the settings of VoiceAttack like it was for me), letting the scheduled task handle elevation.
+    Launch that scheduled task from a shortcut or schtasks /run /tn "VoiceAttackELEVATED" instead of directly running VoiceAttack.exe.
+    This method bypasses UAC prompts every time. For details, see Microsoft docs.
 
-## Troubleshooting
+6) Verifying It Works
 
-1. **.\sample.wav not found**
-   - Find the sample.wav file in the KneeboardWhisper folder, and copy the full file path **including** the sample.wav file
-   - **Ex:** `C:\Users\(Username)\Downloads\WhisperAttack\sample.wav`
-   - Edit the `audio_file = r".\sample.wav"` to include the entire directory in **both** the `transcriber.py` and `recorder.py` files
-   - **Ex:** `audio_file = r"C:\Users\(Username)\Downloads\WhisperAttack\sample.wav"`
-   - Tell Windows to open `transcriber.py` and `recorder.py` with Python 3.11 by right clicking the files and selecting "Open With"; otherwise VoiceAttack may open the files in the text editor when commanded to execute them.
-   
-2.   **Torch Fallback to CPU**  
-   - If you see logs saying “Whisper model loaded on CPU,” your GPU might be unavailable or `torch.cuda.is_available()` is `False`. Confirm you installed the CUDA build of PyTorch and have proper GPU drivers.
+    Start whisper_server.py in a terminal (or just double click the application)
+    In VoiceAttack, press your assigned PTT button:
+        Logs in the terminal: Received command: start → “Starting recording...”
+    Release the button:
+        Logs: “Stopping recording...” → “Transcribing...” → You’ll see recognized text printed → Sent to VoiceAttack.
 
-3. **VoiceAttack.exe Not Found**  
-   - Check that `transcriber.py` has the correct path to `VoiceAttack.exe`, e.g.:  
-     ```
-     C:\Program Files (x86)\VoiceAttack\VoiceAttack.exe
-     ```
+Clipboard & VoiceAttack
 
-4. **No Clipboard Copy**  
-   - Ensure `pyperclip` is installed. Some systems might block or restrict clipboard usage.
+    The recognized text is copied to your clipboard.
+    whisper_server.py also calls VoiceAttack.exe -command "<recognized text>" if it finds VoiceAttack installed.
+    VoiceAttack sees that text as a new command (unless you just want to see it in logs or kneeboard, etc.).
 
-5. **DCS Keybind**  
-   - If you’re not seeing pasted text in DCS, confirm that `CTRL+ALT+P` is actually set in the DCS controls.
+7) Troubleshooting
 
----
+    WinError 2
+        Usually means ffmpeg is missing or not in PATH. Install it and ensure ffmpeg -version works in a normal command prompt.
+    No GPU
+        Check logs: if it loads on CPU instead of GPU, you might not have the CUDA version of PyTorch or your drivers aren’t recognized.
+    UAC Prompt
+        Use the Scheduled Task approach above if you want to run VoiceAttack as admin without pop-ups.
+    No recognized text
+        Make sure your mic is the default input or specify a device index in the sounddevice.InputStream(...).
 
-## Final Notes
+8) Optional: DCS Kneeboard Integration
 
-- **Model Sizes**: For faster recognition, try `tiny` or `base`. For more accurate results, use `small`, `medium`, or `large`.  
-- **First-Time Whisper Download**: The first run might take a while to download the model. Subsequent runs should be faster.
-- **Goodbye Windows Speech**: This fully replaces older Windows or Google-based speech recognition with a local, GPU-accelerated solution.
+If you want recognized text in DCS:
 
-Enjoy your improved local speech recognition with **VoiceAttack + Whisper**!
-```
+    It’s already in your clipboard after each transcription.
+    Bind a key (e.g. CTRL+ALT+P) in DCS to “paste into kneeboard.”
+    Press that key, or have VoiceAttack press it automatically after transcription, to paste your recognized text.
+
+Final Notes
+
+    Change the Whisper model by editing:
+
+    model = load_whisper_model(device='GPU', model_size='small')
+
+    Use "tiny" or "base" if you want faster (but potentially less accurate) recognition.
+    Adjust your sample rate if needed, but 16000 Hz is standard for Whisper.
+    Make sure you keep whisper_server.py running in the background the entire time you’re using push-to-talk commands.
+
+Enjoy your local (offline) speech recognition with OpenAI Whisper + VoiceAttack—no more slow or inaccurate speech engines! If you run into issues, open an issue or check the logs for clues.
