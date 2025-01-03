@@ -146,6 +146,10 @@ python whisper_server.py
     "C:\Path\to\send_command.py" shutdown
     ```
 
+![image](https://github.com/user-attachments/assets/0c9019f9-1f93-49f6-bfa1-7b8ef653953f)
+
+![image](https://github.com/user-attachments/assets/af645cba-fd8b-4761-a9fa-66d74f0bf37c)
+
 - As a small bonus I included a bare voice attack profile that I used in testing. But you still need to edit it and point it to the correct locations where everything is placed!!!
 
 ---
