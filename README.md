@@ -162,6 +162,11 @@ In VoiceAttack, go to **Edit Profile**.
 - ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
+## DCS Kneeboard Integration
+
+This script preserves BojoteX original vision for the code and copies the commands into clipboard for use with the Kneeboard.
+For instructions on how to fully get this working please visit the original repo here: https://github.com/BojoteX/KneeboardWhisper
+---
 
 # Optional/Additional Considerations
 
