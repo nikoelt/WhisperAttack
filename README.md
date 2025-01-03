@@ -9,7 +9,11 @@ This repository provides a single-server approach for using OpenAI Whisper local
 ![image](https://github.com/user-attachments/assets/26c79d80-d95a-4c31-be9a-dd5f61d36245)
 
 
+
+
 ---
+
+
 
 ## Features
 
@@ -26,7 +30,13 @@ This repository provides a single-server approach for using OpenAI Whisper local
   - No repeated model loads (faster, especially with larger Whisper models).
   - Push-to-Talk style workflow with VoiceAttack press & release.
 
+
+
+
 ---
+
+
+
 
 ## Requirements
 
@@ -46,7 +56,13 @@ This repository provides a single-server approach for using OpenAI Whisper local
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
 
+
+
+
 ---
+
+
+
 
 ## Installation
 
@@ -146,6 +162,8 @@ In VoiceAttack, go to **Edit Profile**.
 - ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
+
+# Optional/Additional Considerations
 
 ## Stopping UAC Messages When Running VoiceAttack as Admin
 
@@ -267,7 +285,7 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
 
 ---
 
-### Removing Punctuation
+## Removing Punctuation
 
 If you look at whisper_server.py code, you see the following call:
 
@@ -282,7 +300,7 @@ Everything else stays the same. Whisper will then avoid generating those punctua
 
 ---
 
-### Troubleshooting
+## Troubleshooting
 
 - **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
 - **VoiceAttack not launching**: Verify the path to `VoiceAttack.exe` and ensure it hasn’t moved.
