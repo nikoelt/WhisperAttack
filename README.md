@@ -267,6 +267,21 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
 
 ---
 
+### Removing Punctuation
+
+If you look at whisper_server.py code, you see the following call:
+
+```result = self.model.transcribe(audio_path, language='en')```
+
+You’d modify it to:
+
+``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
+
+Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
+
+
+---
+
 ### Troubleshooting
 
 - **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
