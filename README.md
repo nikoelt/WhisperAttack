@@ -2,7 +2,7 @@
 
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches.
 
-In short, [@SeaTechNerd83](https://github.com/SeaTechNerd83) and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. Unfortunately whilst the speech recognition was lightning fast we had wait for the terminal to launch python and speech engine etc... which took time. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack 
+In short, [@SeaTechNerd83](https://github.com/SeaTechNerd83) and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack.
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition (or Google Speech) with a fully offline, GPU-accelerated recognition engine.
 
@@ -67,11 +67,11 @@ pip install openai-whisper sounddevice soundfile pyperclip
 
 ### `whisper_server.py`
 
-- On startup:
+- **On startup:**
   - Loads the Whisper model (e.g., `small`) on GPU or CPU.
   - Opens a socket server at `127.0.0.1:65432`.
   
-- Commands:
+- **Commands:**
   - `start`: Begin recording to `whisper_temp_recording.wav`.
   - `stop`: Stop recording, transcribe with Whisper, copy text to clipboard, send to VoiceAttack.
   - `shutdown`: Gracefully stops the server.
@@ -91,7 +91,12 @@ python send_command.py stop
 
 ## Running the Whisper Server
 
-1. Open a terminal in the same folder as `whisper_server.py`. or double click the file
+1. Open a terminal in the same folder as `whisper_server.py`.
+2. Run:
+
+```bash
+python whisper_server.py
+```
 
 - You’ll see logs like:
 
@@ -106,9 +111,9 @@ python send_command.py stop
 
 ## Configuring VoiceAttack
 
-### 4.1 Create `send_command.py` Commands
+### 1. Create `send_command.py` Commands
 
-- In VoiceAttack, go to **Edit Profile**.
+In VoiceAttack, go to **Edit Profile**.
 
 #### New Command for "Start Whisper Recording":
 
@@ -133,41 +138,23 @@ python send_command.py stop
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
 
-![image](https://github.com/user-attachments/assets/0c9019f9-1f93-49f6-bfa1-7b8ef653953f)
+#### Optional "Shutdown" Command
 
-![image](https://github.com/user-attachments/assets/af645cba-fd8b-4761-a9fa-66d74f0bf37c)
+- Pass "shutdown" as the parameter:
 
-- As a small bonus I included a bare voice attack profile that I used in testing. But you still need to edit it and point it to the correct locations where everything is placed!!!
-
----
-
-## Troubleshooting
-
-- **WinError 2**:
-  - Ensure `ffmpeg` is installed and in PATH. Run `ffmpeg -version` to verify.
-
-- **No GPU**:
-  - Check logs. If the server loads on CPU instead of GPU, verify PyTorch installation and GPU drivers.
-
-- **No Recognized Text**:
-  - Ensure your mic is set as the default input or specify a device index in `sounddevice.InputStream(...)`.
+    ```
+    "C:\Path\to\send_command.py" shutdown
+    ```
 
 ---
 
-## Optional: DCS Kneeboard Integration
-
-- After transcription, recognized text is copied to your clipboard.
-- Bind a key (e.g., `CTRL+ALT+P`) in DCS to "paste into kneeboard."
-
----
-
-## OPTIONAL FOR RUNNING AS ADMIN - Stopping UAC Messages When Running VoiceAttack as Admin
+## Stopping UAC Messages When Running VoiceAttack as Admin
 
 If you want to avoid UAC prompts every time a voice command is sent while running VoiceAttack as administrator, follow these steps:
 
 ---
 
-## Overview
+### Overview
 
 - Create a new Scheduled Task that runs `VoiceAttack.exe` with highest privileges.
 - Optional: Create a desktop shortcut or a small batch/PowerShell script that triggers the scheduled task.
@@ -176,12 +163,12 @@ When you run the scheduled task (either manually or via a shortcut/script), Wind
 
 ---
 
-### 1) Open Task Scheduler
+### 1. Open Task Scheduler
 
 - Press the **Windows key**, type **Task Scheduler**, and press Enter.
 - Task Scheduler will open. On the left side, you’ll see a tree with "Task Scheduler Library," etc.
 
-### 2) Create a New Task
+### 2. Create a New Task
 
 1. In Task Scheduler, right-click on **Task Scheduler Library** in the left pane.
 2. Choose **New Folder...** (optional) to keep tasks organized—for example, create a folder named `MyTasks`.
@@ -227,7 +214,7 @@ When you run the scheduled task (either manually or via a shortcut/script), Wind
 
 ---
 
-### 3) Test the Task in Task Scheduler
+### 3. Test the Task in Task Scheduler
 
 1. In Task Scheduler, locate your new task (`VoiceAttackElevated`) under the **Task Scheduler Library** (or your custom folder).
 2. Right-click on the task and select **Run**.
@@ -237,7 +224,7 @@ When you run the scheduled task (either manually or via a shortcut/script), Wind
 
 ---
 
-### 4) Create a Shortcut (Optional, but Recommended)
+### 4. Create a Shortcut (Optional, but Recommended)
 
 To simplify launching the task:
 
@@ -261,7 +248,7 @@ Double-clicking this shortcut will run the scheduled task, launching VoiceAttack
 
 ---
 
-### 5) (Advanced) Start the Scheduled Task from Python or a Script
+### 5. (Advanced) Start the Scheduled Task from Python or a Script
 
 If you want to trigger the scheduled task programmatically (e.g., from `whisper_server.py` or `send_command.py`):
 
@@ -291,9 +278,6 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
 - **Stored credentials issue**: If you chose "Run whether user is logged on or not" but didn’t store your credentials correctly, edit the task and re-enter your password.
 
 ---
-
-Now, you can launch VoiceAttack as an administrator without seeing the UAC prompt, either manually, via a desktop shortcut, or programmatically from your scripts!
-
 
 ## Final Notes
 
