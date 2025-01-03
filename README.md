@@ -91,12 +91,7 @@ python send_command.py stop
 
 ## Running the Whisper Server
 
-1. Open a terminal in the same folder as `whisper_server.py`.
-2. Run:
-
-```bash
-python whisper_server.py
-```
+1. Open a terminal in the same folder as `whisper_server.py`. or double click the file
 
 - You’ll see logs like:
 
@@ -138,14 +133,6 @@ python whisper_server.py
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
 
-#### Optional "Shutdown" Command
-
-- Pass "shutdown" as the parameter:
-
-    ```
-    "C:\Path\to\send_command.py" shutdown
-    ```
-
 ![image](https://github.com/user-attachments/assets/0c9019f9-1f93-49f6-bfa1-7b8ef653953f)
 
 ![image](https://github.com/user-attachments/assets/af645cba-fd8b-4761-a9fa-66d74f0bf37c)
@@ -174,7 +161,7 @@ python whisper_server.py
 
 ---
 
-### OPTIONAL FOR RUNNING AS ADMIN - Stopping UAC Messages When Running VoiceAttack as Admin
+## OPTIONAL FOR RUNNING AS ADMIN - Stopping UAC Messages When Running VoiceAttack as Admin
 
 If you want to avoid UAC prompts every time a voice command is sent while running VoiceAttack as administrator, follow these steps:
 
