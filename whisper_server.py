@@ -109,7 +109,7 @@ class WhisperServer:
         self.recording = False
 
         # Delay to ensure OS flushes WAV file
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         # Check file existence & size
         logging.info(f"Checking if file exists: {self.audio_file}")
