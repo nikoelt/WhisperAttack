@@ -292,20 +292,6 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
     subprocess.call(["schtasks", "/run", "/tn", "VoiceAttackElevated"])
     ```
 
----
-
-## Removing Punctuation
-
-If you look at whisper_server.py code, you see the following call:
-
-```result = self.model.transcribe(audio_path, language='en')```
-
-You’d modify it to:
-
-``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
-
-Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
-
 
 ---
 
@@ -320,6 +306,21 @@ Everything else stays the same. Whisper will then avoid generating those punctua
 
 ---
 
+
+## Removing Punctuation
+
+If you look at whisper_server.py code, you see the following call:
+
+```result = self.model.transcribe(audio_path, language='en')```
+
+You’d modify it to:
+
+``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
+
+Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
+
+---
+
 ## Final Notes
 
 - Change the Whisper model by editing:
@@ -330,6 +331,8 @@ Everything else stays the same. Whisper will then avoid generating those punctua
 
 - Use "tiny" or "base" for faster but less accurate recognition. See below for a full speed breakdown
 - Keep `whisper_server.py` running to use push-to-talk commands.
+
+---
 
 ## Available models and languages
 
