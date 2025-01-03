@@ -128,6 +128,10 @@ python whisper_server.py
 
 - Leave this terminal open. The server must keep running to handle start/stop commands.
 
+NOTE: Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
+
+![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+
 ---
 
 ## Configuring VoiceAttack
