@@ -121,24 +121,26 @@ In VoiceAttack, go to **Edit Profile**.
 
 - **When this command executes:**
   - Go to **Other → Windows → Run an application**.
-  - **Application**: Point it to your `python.exe` (or the full path).
+  - **Application**: Point it to 'send_command.py'
   - **Parameters:**
 
-    ```
-    "C:\Path\to\send_command.py" start
-    ```
-
 - Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
+
+- ![image](https://github.com/user-attachments/assets/df309ad5-c3be-40ef-98ce-c3c6c0c8e307)
+
 
 #### Another Command for "Stop Whisper Recording":
 
 - Same steps, except the **Parameters** is:
 
     ```
-    "C:\Path\to\send_command.py" stop
+    stop
     ```
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
+
+- ![image](https://github.com/user-attachments/assets/895a8585-334d-4d98-9143-f88e8a267f07)
+- ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
 
