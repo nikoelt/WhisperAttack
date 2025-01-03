@@ -174,6 +174,140 @@ python whisper_server.py
 
 ---
 
+### OPTIONAL FOR RUNNING AS ADMIN - Stopping UAC Messages When Running VoiceAttack as Admin
+
+If you want to avoid UAC prompts every time a voice command is sent while running VoiceAttack as administrator, follow these steps:
+
+---
+
+## Overview
+
+- Create a new Scheduled Task that runs `VoiceAttack.exe` with highest privileges.
+- Optional: Create a desktop shortcut or a small batch/PowerShell script that triggers the scheduled task.
+
+When you run the scheduled task (either manually or via a shortcut/script), Windows will launch VoiceAttack in elevated mode without prompting UAC each time.
+
+---
+
+### 1) Open Task Scheduler
+
+- Press the **Windows key**, type **Task Scheduler**, and press Enter.
+- Task Scheduler will open. On the left side, you’ll see a tree with "Task Scheduler Library," etc.
+
+### 2) Create a New Task
+
+1. In Task Scheduler, right-click on **Task Scheduler Library** in the left pane.
+2. Choose **New Folder...** (optional) to keep tasks organized—for example, create a folder named `MyTasks`.
+3. Right-click on the new folder (or **Task Scheduler Library** if you didn’t create a folder) and select **Create Task...** (not "Create Basic Task").
+
+#### On the General Tab
+
+- **Name**: Enter something like `VoiceAttackElevated`.
+- **Description** (optional): "Run VoiceAttack as admin without UAC."
+- **User account**: By default, it shows your current user. That’s fine.
+- Select **Run whether user is logged on or not** if you want the task to work even if you’re not logged in. Otherwise, leave it at **Run only when user is logged on**.
+- Check **Run with highest privileges**.
+- **Configure for**: Windows 10 or Windows 11, whichever version you have.
+
+#### You Do NOT Need Any Triggers
+
+- We’re going to run this task manually (from a shortcut or script). You can skip the **Triggers** tab unless you want VoiceAttack to auto-run at login, etc.
+
+#### On the Actions Tab
+
+1. Click **New...**
+2. **Action**: "Start a program."
+3. **Program/script**: Browse to your `VoiceAttack.exe`. For example:
+
+    ```
+    C:\Program Files (x86)\VoiceAttack\VoiceAttack.exe
+    ```
+
+4. **Add arguments** (optional): If you have any command-line arguments for VoiceAttack, put them here.
+5. **Start in** (optional): The folder in which VoiceAttack should start (often the same folder as the .exe).
+6. Click **OK** to add this action.
+
+#### Conditions / Settings
+
+- Leave these at their defaults unless you have specific requirements.
+- On **Conditions**: Uncheck "Start the task only if the computer is on AC power" if you want it to run on battery power.
+- On **Settings**: Ensure "Allow task to be run on demand" is checked.
+
+#### Save the Task
+
+- Click **OK** at the bottom.
+- If you chose "Run whether user is logged on or not," Windows will prompt for your password so it can store the credentials.
+
+---
+
+### 3) Test the Task in Task Scheduler
+
+1. In Task Scheduler, locate your new task (`VoiceAttackElevated`) under the **Task Scheduler Library** (or your custom folder).
+2. Right-click on the task and select **Run**.
+3. VoiceAttack should launch without a UAC prompt.
+
+- If you see a status of "Running" and then it disappears, check whether VoiceAttack actually launched (it might be running in the tray).
+
+---
+
+### 4) Create a Shortcut (Optional, but Recommended)
+
+To simplify launching the task:
+
+1. Right-click on the Desktop → **New → Shortcut**.
+2. In "Type the location of the item," enter:
+
+    ```
+    schtasks.exe /run /tn "VoiceAttackElevated"
+    ```
+
+    - If you placed the task in a custom folder, include the path. For example:
+
+        ```
+        schtasks.exe /run /tn "MyTasks\VoiceAttackElevated"
+        ```
+
+3. Click **Next** → Name the shortcut (e.g., `VoiceAttack Elevated`).
+4. Click **Finish**.
+
+Double-clicking this shortcut will run the scheduled task, launching VoiceAttack with elevated privileges and no UAC prompt.
+
+---
+
+### 5) (Advanced) Start the Scheduled Task from Python or a Script
+
+If you want to trigger the scheduled task programmatically (e.g., from `whisper_server.py` or `send_command.py`):
+
+- Use this command in a script:
+
+    ```bash
+    schtasks.exe /run /tn "VoiceAttackElevated"
+    ```
+
+- Or in Python:
+
+    ```python
+    import subprocess
+
+    subprocess.call(["schtasks", "/run", "/tn", "VoiceAttackElevated"])
+    ```
+
+---
+
+### Troubleshooting
+
+- **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
+- **VoiceAttack not launching**: Verify the path to `VoiceAttack.exe` and ensure it hasn’t moved.
+- **UAC prompt STILL appears**: Ensure:
+  - "Run as administrator" is unchecked in the file properties of `VoiceAttack.exe`.
+  - You are running the scheduled task (not the .exe directly).
+- **Stored credentials issue**: If you chose "Run whether user is logged on or not" but didn’t store your credentials correctly, edit the task and re-enter your password.
+
+---
+
+Now, you can launch VoiceAttack as an administrator without seeing the UAC prompt, either manually, via a desktop shortcut, or programmatically from your scripts!
+
+
 ## Final Notes
 
 - Change the Whisper model by editing:
