@@ -204,7 +204,7 @@ ERROR: No matching distribution found for torch
 
 ### UAC
 ### Running as admin is not recommended!
-- **Perform steps as outlined in 'Stopping UAC Messages' below**
+- **Perform steps as outlined in [Stopping UAC Messages](https://github.com/nikoelt/WhisperAttack/tree/main#stopping-uac-messages-when-running-voiceattack-as-admin) below**
 - **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
 - **VoiceAttack not launching**: Verify the path to `VoiceAttack.exe` and ensure it hasn’t moved.
 - **UAC prompt STILL appears**: Ensure:
