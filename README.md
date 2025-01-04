@@ -176,7 +176,9 @@ For instructions on how to fully get this working please visit the original repo
 
 ## Stopping UAC Messages When Running VoiceAttack as Admin
 
-If you want to avoid UAC prompts every time a voice command is sent while running VoiceAttack as administrator, follow these steps:
+**Running VoiceAttack as administrator is not recommended. Do not do these steps unless you really need to run VA with admin privileges
+**
+However, if you want to avoid UAC prompts every time a voice command is sent while running VoiceAttack as administrator, follow these steps:
 
 ---
 
