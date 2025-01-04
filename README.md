@@ -113,14 +113,6 @@ python send_command.py stop
 ## Running the Whisper Server
 1. Double click whisper_server.py
 
-### Alternatively
-1. Open a terminal in the same folder as `whisper_server.py`. 
-2. Run:
-
-```bash
-python whisper_server.py
-```
-
 - You’ll see logs like:
 
 ```
