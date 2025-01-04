@@ -130,7 +130,9 @@ NOTE: Make sure to wait for the Whisper Model to download. This process only nee
 
 ## Configuring VoiceAttack
 
-### 1. Create `send_command.py` Commands
+### 1. Disable all speech recognition within VoiceAttack
+
+### 2. Create `send_command.py` Commands
 
 In VoiceAttack, go to **Edit Profile**.
 
