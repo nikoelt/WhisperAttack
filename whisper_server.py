@@ -6,7 +6,7 @@ import subprocess
 import os
 import unicodedata
 import tempfile
-
+import keyboard
 import torch
 import whisper
 import sounddevice as sd
@@ -146,6 +146,12 @@ class WhisperServer:
         """
         # Copy to clipboard
         pyperclip.copy(text)
+        logging.info("Text copied to clipboard using pyperclip.")
+        try:
+            keyboard.press_and_release('ctrl+alt+p')
+            logging.info("DCS Kneeboard Populated")
+        except Exception as e:
+            logging.error(f"Failed to simulate keyboard shortcut: {e}")
 
         # If you want VoiceAttack to receive the recognized text as a command
         if os.path.isfile(VOICEATTACK_EXE):
