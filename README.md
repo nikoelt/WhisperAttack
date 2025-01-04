@@ -41,7 +41,7 @@ This repository provides a single-server approach for using OpenAI Whisper local
 ## Requirements
 
 - **Python 3.11**
-  - Install from [python.org]([https://python.org](https://www.python.org/downloads/release/python-3119/)) or the Microsoft Store
+  - Install from [python.org](https://www.python.org/downloads/release/python-3119) or the Microsoft Store
   - NOTE! v3.12 3.13 etc... will NOT work - PyTorch often only provides official wheels for Python 3.8 → 3.11
 
 - **VoiceAttack**
