@@ -300,7 +300,7 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
 
 ---
 
-## Troubleshooting
+# Troubleshooting
 
 - **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
 - **VoiceAttack not launching**: Verify the path to `VoiceAttack.exe` and ensure it hasn’t moved.
