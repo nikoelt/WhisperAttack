@@ -140,9 +140,9 @@ In VoiceAttack, go to **Edit Profile**.
 ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
-## DCS Kneeboard Integration
+## DCS Kneeboard Integration - Optional
 
-- This script preserves BojoteX original vision for the code and copies the commands into clipboard for use with the Kneeboard.
+This script preserves BojoteX original vision for the code and copies the commands into clipboard for use with the Kneeboard.
 The original repo can be found here: [https://github.com/BojoteX/KneeboardWhisper](https://github.com/BojoteX/KneeboardWhisper?tab=readme-ov-file#troubleshooting)
 
 Do the following to enable DCS Kneeboard to transcribe what you say:
