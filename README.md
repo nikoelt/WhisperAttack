@@ -329,17 +329,17 @@ ERROR: No matching distribution found for torch
 ---
 # Advanced Configuration
 
-## Removing Punctuation
+## Adding back Punctuation
 
 If you look at whisper_server.py code, you see the following call:
 
-```result = self.model.transcribe(audio_path, language='en')```
+``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
 
 You’d modify it to:
 
-``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
+```result = self.model.transcribe(audio_path, language='en')```
 
-Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
+Everything else stays the same. Whisper will then start adding punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
 
 ## Performance (AI Model)
 - If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by reducing the model size (extra information on the models is available in the table below) in the `whisper_server.py` file as follows: 
