@@ -321,7 +321,7 @@ Looking in indexes: https://download.pytorch.org/whl/cu118
 ERROR: Could not find a version that satisfies the requirement torch (from versions: none)
 ERROR: No matching distribution found for torch
 ```
--Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
+- Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
 ---
 # Advanced Configuration
 
