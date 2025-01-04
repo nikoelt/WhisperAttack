@@ -303,9 +303,17 @@ If you want to trigger the scheduled task programmatically (e.g., from `whisper_
   - "Run as administrator" is unchecked in the file properties of `VoiceAttack.exe`.
   - You are running the scheduled task (not the .exe directly).
 - **Stored credentials issue**: If you chose "Run whether user is logged on or not" but didn’t store your credentials correctly, edit the task and re-enter your password.
-
+### File Found And Not Found
+- If the Whisper server fails to transcribe the audio file and exhibits something similar to this:
+```
+File exists, size = 98256 bytes
+Transcribing C:\Users\XXXXXX\AppData\Local\Temp\whisper_temp_recording.wav...
+Failed to transcribe audio: [WinError 2] The system cannot find the file specified
+No transcription result.
+```
+- This means FFmpeg is not installed either on your system or in the PATH (see requirements section for FFmpeg download) and making FFmpeg available in the PATH on your system should remedy the issue.
 ---
-
+# Advanced Configuration
 
 ## Removing Punctuation
 
@@ -319,10 +327,7 @@ You’d modify it to:
 
 Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
 
----
-
-## Final Notes
-
+## Changing the Whisper AI Voice recognition model
 - Change the Whisper model by editing:
 
     ```python
@@ -332,9 +337,7 @@ Everything else stays the same. Whisper will then avoid generating those punctua
 - Use "tiny" or "base" for faster but less accurate recognition. See below for a full speed breakdown
 - Keep `whisper_server.py` running to use push-to-talk commands.
 
----
-
-## Available models and languages
+### Available models and languages
 
 There are six model sizes, four with English-only versions, offering speed and accuracy tradeoffs.
 Below are the names of the available models and their approximate memory requirements and inference speed relative to the large model.
