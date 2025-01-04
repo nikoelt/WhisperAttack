@@ -322,7 +322,7 @@ ERROR: No matching distribution found for torch
 ```
 - Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
 
-##UAC (Running as admin is not recommended!!!)
+## UAC (Running as admin is not recommended!!!)
 - **Task doesn’t run**: Check Task Scheduler’s "Last Run Result" column for error codes.
 - **VoiceAttack not launching**: Verify the path to `VoiceAttack.exe` and ensure it hasn’t moved.
 - **UAC prompt STILL appears**: Ensure:
