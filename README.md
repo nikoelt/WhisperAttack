@@ -312,6 +312,16 @@ Failed to transcribe audio: [WinError 2] The system cannot find the file specifi
 No transcription result.
 ```
 - This means FFmpeg is not installed either on your system or in the PATH (see requirements section for FFmpeg download) and making FFmpeg available in the PATH on your system should remedy the issue.
+
+### Could not find a version that satisfies the requirement torch
+- If you get a an error like this:
+```
+ip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+Looking in indexes: https://download.pytorch.org/whl/cu118
+ERROR: Could not find a version that satisfies the requirement torch (from versions: none)
+ERROR: No matching distribution found for torch
+```
+-Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
 ---
 # Advanced Configuration
 
