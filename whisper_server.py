@@ -109,7 +109,7 @@ class WhisperServer:
         self.recording = False
 
         # Delay to ensure OS flushes WAV file
-        time.sleep(0.1)
+        time.sleep(0.01)
 
         # Check file existence & size
         logging.info(f"Checking if file exists: {self.audio_file}")
@@ -132,7 +132,7 @@ class WhisperServer:
         """
         try:
             logging.info(f"Transcribing {audio_path}...")
-            result = self.model.transcribe(audio_path, language='en')
+            result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")
             text = unicodedata.normalize('NFC', result["text"].strip())
             logging.info(f"Transcription result: {text}")
             return text
