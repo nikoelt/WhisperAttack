@@ -339,15 +339,16 @@ You’d modify it to:
 
 Everything else stays the same. Whisper will then avoid generating those punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
 
-## Changing the Whisper AI Voice recognition model
-- Change the Whisper model by editing:
+## Performance (AI Model)
+- If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by reducing the model size (extra information on the models is available in the table below) in the `whisper_server.py` file as follows: 
+- Change the Whisper model by changing "small" to another model (see table) inside the python script as found:
 
     ```python
     model = load_whisper_model(device='GPU', model_size='small')
     ```
 
-- Use "tiny" or "base" for faster but less accurate recognition. See below for a full speed breakdown
-- Keep `whisper_server.py` running to use push-to-talk commands.
+- Using smaller models will reduce VRAM and compute costs. See below for a full speed breakdown
+- First activation with a new AI model will prompt the model to be downloaded which may take an extended amount of time depending on internet speed.
 
 ### Available models and languages
 
