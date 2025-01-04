@@ -2,7 +2,7 @@
 
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches.
 
-In short, [@SeaTechNerd83](https://github.com/SeaTechNerd83) and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. Current average compute is less than a second, on a high end GPU like a 4090 it's 0.2-0.3s which includes 0.1s of blocking for windows to commit .wav file to memory. This line can be made 0 seconds and serves those with weaker systems
+In short, [@SeaTechNerd83](https://github.com/SeaTechNerd83) and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed. Current average compute is less than a second, on a high end GPU like a 4090 it's 0.2-0.3s which includes 0.1s of blocking for windows to commit .wav file to memory. This line can be made 0 seconds and serves those with weaker systems.
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated recognition engine.
 
@@ -29,9 +29,10 @@ This repository provides a single-server approach for using OpenAI Whisper local
 - **Advantages:**
   - No repeated model loads (faster, especially with larger Whisper models).
   - Push-to-Talk style workflow with VoiceAttack press & release.
+  - Extremely accurate voice recognition (No more VoiceAttack misunderstanding you!)
 
 
-
+### VAICOM works but is still being tested and we are still learning how to best use this script with VAICOM. If you wish to help test VAICOM with the Whisper AI script, you can get more information in the VR4DCS discord server
 
 ---
 
