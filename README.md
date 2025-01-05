@@ -112,6 +112,10 @@ Pre-configured Voice Attack Profile is added to the release for your convinience
 
 ### 1. Disable all speech recognition within VoiceAttack
 
+<img width="825" alt="Disable_speech_recognition" src="https://github.com/user-attachments/assets/1bf08530-4a05-4b19-92a5-560879b50936" />
+
+<img width="840" alt="VoiceAttack_startup" src="https://github.com/user-attachments/assets/fc0bfd3c-d0aa-4501-95ce-a31fa9c78790" />
+
 ### 2. Create `send_command.py` Commands
 
 In VoiceAttack, go to **Edit Profile**.
