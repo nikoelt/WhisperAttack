@@ -2,9 +2,9 @@
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated blazing fast and accurate AI speech recognition engine
 
-This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to **hradec**, whose original script used Google Voice Recognition, and [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches.
+This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation
 
-In short, [@SeaTechNerd83](https://github.com/SeaTechNerd83) and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
+In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
 
 ![image](https://github.com/user-attachments/assets/26c79d80-d95a-4c31-be9a-dd5f61d36245)
 
