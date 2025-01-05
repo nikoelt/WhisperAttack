@@ -260,9 +260,6 @@ Additionally, the `turbo` model is an optimized version of `large-v3` that offer
 
 Whisper's performance varies widely depending on the language. The figure below shows a performance breakdown of `large-v3` and `large-v2` models by language, using WERs (word error rates) or CER (character error rates, shown in *Italic*) evaluated on the Common Voice 15 and Fleurs datasets. Additional WER/CER metrics corresponding to the other models and datasets can be found in Appendix D.1, D.2, and D.4 of [the paper](https://arxiv.org/abs/2212.04356), as well as the BLEU (Bilingual Evaluation Understudy) scores for translation in Appendix D.3.
 
-
-# Optional/Additional Considerations
-
 ## Stopping UAC Messages When Running VoiceAttack as Admin
 
 ### Running VoiceAttack as administrator is not recommended. Do not do these steps unless you need to run VA with admin privileges (aka VAICOM) ###
