@@ -22,6 +22,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Records mic audio on demand (via socket commands).
   - Transcribes the `.wav` file using Whisper.
   - Sends recognized text into VoiceAttack.
+  - Pushes transcribed text to clipboard - (can be pasted in DCS Chat etc...)
 
 - **Simple Client Script** (`send_command.py`):
   - Sends "start", "stop", or "shutdown" commands to the server.
