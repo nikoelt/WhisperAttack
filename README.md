@@ -1,4 +1,4 @@
-# OpenAI Whisper Server for VoiceAttack - WhisperAttack
+# WhisperAttack - OpenAI Whisper for VoiceAttack - 
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated blazing fast and accurate AI speech recognition engine
 
