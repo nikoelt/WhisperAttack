@@ -108,7 +108,8 @@ NOTE: Make sure to wait for the Whisper Model to download. This process only nee
 
 ## Configuring VoiceAttack
 
-Pre-configured Voice Attack Profile is added to the release for your convinience. However it's still recommended to read through the steps below to understand how whisper injections actually work!
+Pre-configured Voice Attack Profile is added to the release for your convinience. You must modify it to point to where you have placed WhisperAttack on your computer. 
+It is recommended to read through the steps below to understand how whisper injections actually work!
 
 ### 1. Disable all speech recognition within VoiceAttack
 
