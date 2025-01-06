@@ -129,6 +129,10 @@ In VoiceAttack, go to **Edit Profile**.
   - **Application**: Point it to 'send_command.py'
   - **Parameters:**
 
+   ```
+    start
+    ```
+   
 - Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
 
 ![image](https://github.com/user-attachments/assets/df309ad5-c3be-40ef-98ce-c3c6c0c8e307)
