@@ -14,6 +14,7 @@ import whisper
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
+import re
 
 ###############################################################################
 # CONFIG
@@ -43,6 +44,75 @@ SAMPLE_RATE = 16000
 
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+###############################################################################
+# NUMBER / TEXT PROCESSING HELPERS
+###############################################################################
+word_to_digit_map = {
+    "zero": "0",
+    "one": "1",
+    "wun": "1",
+    "two": "2",
+    "three": "3",
+    "tree": "3",
+    "four": "4",
+    "five": "5",
+    "fife": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+    "niner": "9",
+    "ten": "10",
+    # Honeypot Bias
+    "to": "2",
+    "for": "4",
+    "gulf": "Golf",
+    "gold": "Golf",
+    "mic": "Mike",
+    "wosky": "Whiskey",
+    "Weske": "Whiskey",
+    "atel": "Hotel",
+}
+
+def replace_spelled_numbers_with_digits(text):
+    """
+    Replace spelled-out numbers (e.g., 'one', 'two') with digits ('1', '2').
+    Uses case-insensitive matching on word boundaries.
+    """
+    for word, digit in word_to_digit_map.items():
+        pattern = r"\b" + word + r"\b"
+        text = re.sub(pattern, digit, text, flags=re.IGNORECASE)
+    return text
+
+def custom_cleanup_text(text):
+    """
+    Clean up the recognized text by:
+    1. Normalizing the text.
+    2. Replacing hyphens with spaces for easier processing of sequences.
+    3. Replacing spelled-out numbers with digits.
+    4. Removing unnecessary spaces between digits.
+    5. Removing unwanted characters (punctuation, special symbols, etc.).
+    """
+    # Normalize unicode
+    text = unicodedata.normalize('NFC', text.strip())
+
+    # Replace hyphens with spaces for easier processing
+    text = text.replace('-', ' ')
+
+    # Replace spelled-out numbers and specific terms with their mapped values
+    text = replace_spelled_numbers_with_digits(text)
+
+    # Remove any non-word (a-z0-9_) and non-space characters except periods
+    text = re.sub(r"[^\w\s.]", "", text)
+
+    # Remove spaces between digits (e.g., "9 0" => "90")
+    text = re.sub(r"(?<=\d)\s+(?=\d)", "", text)
+    
+    # Remove extra spaces between words
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
 
 ###############################################################################
 # WHISPER LOADING
@@ -147,10 +217,22 @@ class WhisperServer:
         """
         try:
             logging.info(f"Transcribing {audio_path}...")
-            result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")
-            text = unicodedata.normalize('NFC', result["text"].strip())
-            logging.info(f"Transcription result: {text}")
-            return text
+            result = self.model.transcribe(
+                audio_path, 
+                language='en', 
+                suppress_tokens="0,11,13,30",
+                initial_prompt="This is for aviation use. Recognize phonetic alphabet, and output numbers as digits, not words",
+            )
+            # Now post-process the recognized text
+            text = result["text"]
+            logging.info(f"Raw transcription result: {text}")
+            
+            # Clean up/suppress hyphens, handle spelled-out numbers, etc.
+            cleaned_text = custom_cleanup_text(text)
+
+            logging.info(f"Final cleaned transcription: {cleaned_text}")
+            return cleaned_text
+
         except Exception as e:
             logging.error(f"Failed to transcribe audio: {e}")
             return ""
@@ -232,7 +314,7 @@ class WhisperServer:
 ###############################################################################
 def main():
     # Load Whisper model only once
-    model = load_whisper_model(device='GPU', model_size='small.en')  # or 'base', etc.
+    model = load_whisper_model(device='GPU', model_size='small')  # or 'base', 'medium', etc.
 
     # Create and run the server
     server = WhisperServer(model, device='GPU')
