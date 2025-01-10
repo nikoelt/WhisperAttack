@@ -56,8 +56,6 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Needed by Whisper for audio decoding.
   - Install via:
     - `winget install ffmpeg`
-    - Chocolatey: `choco install ffmpeg`
-    - Or download from [ffmpeg.org](https://ffmpeg.org).
 
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
