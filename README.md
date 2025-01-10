@@ -54,7 +54,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 - **FFmpeg** (must be in your PATH)
   - Needed by Whisper for audio decoding.
-  - Install via:
+  - Install via opening terminal and:
     - `winget install ffmpeg`
 
 - **GPU (Optional, but Recommended)**
