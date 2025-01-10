@@ -42,9 +42,12 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 ## Requirements
 
-- **Python 3.11**
+- **Python 3.11** (must be in your PATH)
   - Install from [python.org](https://www.python.org/downloads/release/python-3119) or the Microsoft Store
   - NOTE! v3.12 3.13 etc... will NOT work - PyTorch often only provides official wheels for Python 3.8 → 3.11
+
+![python](https://github.com/user-attachments/assets/1b23945c-2635-40ea-a8b1-51bbfbe2a7b4)
+
 
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
