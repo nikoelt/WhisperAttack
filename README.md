@@ -76,15 +76,14 @@ Open a terminal and run:
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu118
-pip install openai-whisper sounddevice soundfile pyperclip
+pip install openai-whisper sounddevice soundfile pyperclip keyboard
 ```
 
 - `torch` from the `cu118` index is for CUDA (adjust for your GPU's toolkit version).
 - `openai-whisper` is the Whisper engine.
 - `sounddevice` & `soundfile` handle audio capture.
 - `pyperclip` copies recognized text to the clipboard.
-
-
+- `keyboard` is used to populate the DCS kneeboard with the text via the associated key binding
 
 ---
 
