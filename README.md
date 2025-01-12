@@ -66,6 +66,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 ---
 
 ### Installation  
+- Download the latest release from this repo and unarchive anywhere on your computer. I used C:/WhisperAttack as an example
 - Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
 - NOTE! The first start will take some time as dependecies and OpenAI Whsiper model will be installed
 ---
