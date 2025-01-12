@@ -213,10 +213,6 @@ ERROR: Could not find a version that satisfies the requirement torch (from versi
 ERROR: No matching distribution found for torch
 ```
 - Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
-
-### UAC Popups
-### Running as admin is not recommended! VAICOM users excepted
-- **Perform steps as outlined in [Stopping UAC Messages](#stopping-uac-messages-when-running-voiceattack-as-admin) below**
   
 ---
 
@@ -264,13 +260,5 @@ The `.en` models for English-only applications tend to perform better, especiall
 Additionally, the `turbo` model is an optimized version of `large-v3` that offers faster transcription speed with a minimal degradation in accuracy.
 
 Whisper's performance varies widely depending on the language. The figure below shows a performance breakdown of `large-v3` and `large-v2` models by language, using WERs (word error rates) or CER (character error rates, shown in *Italic*) evaluated on the Common Voice 15 and Fleurs datasets. Additional WER/CER metrics corresponding to the other models and datasets can be found in Appendix D.1, D.2, and D.4 of [the paper](https://arxiv.org/abs/2212.04356), as well as the BLEU (Bilingual Evaluation Understudy) scores for translation in Appendix D.3.
-
-## Stopping UAC Messages When Running VoiceAttack as Admin
-
-### Running VoiceAttack as administrator is not recommended. Do not do these steps unless you need to run VA with admin privileges (aka VAICOM) ###
-
-- Download Vallhala Release
-- WhisperAttack will now ask for UAC Permission to run elevated
-
 
 Enjoy your local (offline) speech recognition with OpenAI Whisper + VoiceAttack! If you run into issues, open an issue or check the logs for clues.
