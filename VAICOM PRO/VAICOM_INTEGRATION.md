@@ -16,6 +16,10 @@ Within the VAICOM configuration the speech processing engine must be set to VSPX
 characters when matching "When I say" commands when it is executed by the Whisper server. The VAICOM PRO VSPX processing engine, and the exported
 key words from its database when run in this mode, use official supported "When I say" VoiceAttack syntax that is required for Whisper.
 
+## 1. VAICOM PRO keywords database
+
+The VAICOM PRO configuration contains an editor that can be used to add aliases for commands. WhisperAttack converts textual numbers to numerical values, e.g. "two" is 2. Because of this aliases will need to be added for keywords that contain textual numbers. For example, your wingman has the existing aliases of "two", "winger", and "bozo". You will need to add another alias for this with a value of `1`. This will need to be repeated for the other wingmen, and other items in the list of aliases shown in the editor. Refer to the VAICOM manual for instructions on how to do this.
+
 ## 2. VAICOM PRO VoiceAttack profile
 
 The default VAICOM PRO profile that is imported into VoiceAttack requires modifications for running the `send_command.py` application with `start` or `stop` when TX buttons are pressed and released. There are also changes required to the import for the "When I say" keyword collections as wildcards (`*`) are not supported.
