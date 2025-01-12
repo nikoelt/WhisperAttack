@@ -65,26 +65,8 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 ---
 
-
-
-
-## Installation
-
-### 1. Install Python Dependencies
-
-Open a terminal and run:
-
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cu118
-pip install openai-whisper sounddevice soundfile pyperclip keyboard
-```
-
-- `torch` from the `cu118` index is for CUDA (adjust for your GPU's toolkit version).
-- `openai-whisper` is the Whisper engine.
-- `sounddevice` & `soundfile` handle audio capture.
-- `pyperclip` copies recognized text to the clipboard.
-- `keyboard` is used to populate the DCS kneeboard with the text via the associated key binding
-
+### Installation  
+Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
 ---
 
 
