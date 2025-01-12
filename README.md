@@ -148,7 +148,8 @@ In VoiceAttack, go to **Edit Profile**.
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
 
-![image](https://github.com/user-attachments/assets/895a8585-334d-4d98-9143-f88e8a267f07)
+![image](https://github.com/user-attachments/assets/a211b949-c575-4573-a759-9d77b68d3568)
+
 ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
