@@ -33,7 +33,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Extremely accurate voice recognition (No more VoiceAttack misunderstanding you!)
 
 
-### VAICOM works but is still being tested and we are still learning how to best use this script with VAICOM. If you wish to help test VAICOM with the Whisper AI script, you can get more information in the VR4DCS discord server
+### VAICOM integration please go to: https://github.com/nikoelt/WhisperAttack/blob/add-vaicom-integration-instructions/VAICOM%20PRO/VAICOM_INTEGRATION.md
 
 ---
 
