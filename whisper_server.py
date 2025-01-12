@@ -1,3 +1,42 @@
+import sys
+import subprocess
+import pkg_resources
+
+# ------------- AUTO-INSTALL MISSING DEPENDENCIES -------------
+REQUIRED_PACKAGES = [
+    "whisper",
+    "sounddevice",
+    "soundfile",   # note: the actual PyPI package name is "SoundFile"
+    "rapidfuzz",
+    "pyperclip",
+    "keyboard",
+    "torch"
+]
+
+def install_missing_packages():
+    """Check if each required package is installed; if not, install it."""
+    installed_packages = {pkg.key for pkg in pkg_resources.working_set}
+    missing = []
+    for package in REQUIRED_PACKAGES:
+        # For case-insensitivity in package name checks
+        # e.g., SoundFile is listed as soundfile in 'installed_packages'
+        if package.lower() not in installed_packages:
+            missing.append(package)
+
+    if missing:
+        print(f"Installing missing packages: {missing}")
+        python_exe = sys.executable
+        subprocess.check_call(
+            [python_exe, "-m", "pip", "install", "--upgrade"] + missing
+        )
+    else:
+        print("All required packages are already installed.")
+
+# Attempt to install missing packages
+install_missing_packages()
+
+# Now that we've attempted to install them, re-import everything
+# to ensure they’re actually present in the current session.
 import os
 import sys
 import ctypes
@@ -15,12 +54,30 @@ import sounddevice as sd
 import soundfile as sf
 import pyperclip
 import re
+from rapidfuzz import process
 
 ###############################################################################
 # CONFIG
 ###############################################################################
 HOST = '127.0.0.1'
 PORT = 65432
+
+# Text-file paths for fuzzy words + word mappings
+FUZZY_WORDS_TEXT_FILE = "fuzzy_words.txt"
+WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
+
+# Ensure the script is running with admin privileges
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+if not is_admin():
+    ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable, " ".join(sys.argv), None, 1
+    )
+    sys.exit()
 
 # Use the system's temporary folder for the WAV file
 TEMP_DIR = tempfile.gettempdir()
@@ -33,69 +90,115 @@ SAMPLE_RATE = 16000
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 ###############################################################################
-# NUMBER / TEXT PROCESSING HELPERS
+# PHONETIC ALPHABET
 ###############################################################################
-word_to_digit_map = {
-    "zero": "0",
-    "one": "1",
-    "wun": "1",
-    "two": "2",
-    "three": "3",
-    "tree": "3",
-    "four": "4",
-    "five": "5",
-    "fife": "5",
-    "six": "6",
-    "seven": "7",
-    "eight": "8",
-    "nine": "9",
-    "niner": "9",
-    "ten": "10",
-    # Honeypot Bias
-    "to": "2",
-    "for": "4",
-    "gulf": "Golf",
-    "gold": "Golf",
-    "mic": "Mike",
-    "wosky": "Whiskey",
-    "Weske": "Whiskey",
-    "atel": "Hotel",
-}
+phonetic_alphabet = [
+    "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf",
+    "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November",
+    "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform",
+    "Victor", "Whiskey", "Xray", "Yankee", "Zulu",
+]
 
-def replace_spelled_numbers_with_digits(text):
+###############################################################################
+# FUZZY MATCH + CLEANUP
+###############################################################################
+def correct_dcs_and_phonetics_separately(
+    text,
+    dcs_list,
+    phonetic_list,
+    dcs_threshold=85,
+    phonetic_threshold=80
+):
     """
-    Replace spelled-out numbers (e.g., 'one', 'two') with digits ('1', '2').
+    Applies fuzzy matching for your loaded DCS callsigns (dcs_list)
+    and the phonetic_alphabet. Each token is compared to both lists.
+    Whichever is the best match wins.
+    """
+    tokens = text.split()
+    corrected_tokens = []
+
+    dcs_lower = [x.lower() for x in dcs_list]
+    phon_lower = [x.lower() for x in phonetic_list]
+
+    for token in tokens:
+        # If it's super short, skip
+        if len(token) < 3:
+            corrected_tokens.append(token)
+            continue
+
+        t_lower = token.lower()
+
+        dcs_match = process.extractOne(
+            t_lower, dcs_lower, score_cutoff=dcs_threshold
+        )
+        phon_match = process.extractOne(
+            t_lower, phon_lower, score_cutoff=phonetic_threshold
+        )
+
+        best_token = token
+        best_score = 0
+
+        # Check DCS match
+        if dcs_match is not None:
+            match_name_dcs, score_dcs, _ = dcs_match
+            if score_dcs > best_score:
+                best_score = score_dcs
+                for orig in dcs_list:
+                    if orig.lower() == match_name_dcs:
+                        best_token = orig
+                        break
+
+        # Check phonetic match
+        if phon_match is not None:
+            match_name_phon, score_phon, _ = phon_match
+            if score_phon > best_score:
+                best_score = score_phon
+                for orig in phonetic_list:
+                    if orig.lower() == match_name_phon:
+                        best_token = orig
+                        break
+
+        corrected_tokens.append(best_token)
+
+    return " ".join(corrected_tokens)
+
+def replace_word_mappings(word_mappings, text):
+    """
+    Replace spelled-out numbers or other custom words with their
+    mapped values. (E.g., "one" -> "1", "tawa" -> "Tower".)
     Uses case-insensitive matching on word boundaries.
     """
-    for word, digit in word_to_digit_map.items():
-        pattern = r"\b" + word + r"\b"
-        text = re.sub(pattern, digit, text, flags=re.IGNORECASE)
+    for word, replacement in word_mappings.items():
+        pattern = rf"\b{re.escape(word)}\b"
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     return text
 
-def custom_cleanup_text(text):
+def custom_cleanup_text(text, word_mappings):
     """
-    Clean up the recognized text by:
-    1. Normalizing the text.
-    2. Replacing hyphens with spaces for easier processing of sequences.
-    3. Replacing spelled-out numbers with digits.
-    4. Removing unnecessary spaces between digits.
-    5. Removing unwanted characters (punctuation, special symbols, etc.).
+    1. Normalize the text.
+    2. Replace spelled-out numbers & custom words with mapped values.
+    3. Remove punctuation except periods.
+    4. Remove extra spaces between digits.
+    5. Remove extra whitespace.
     """
     # Normalize unicode
     text = unicodedata.normalize('NFC', text.strip())
 
-    # Replace hyphens with spaces for easier processing
-    text = text.replace('-', ' ')
+    # Replace spelled-out numbers and custom terms
+    text = replace_word_mappings(word_mappings, text)
 
-    # Replace spelled-out numbers and specific terms with their mapped values
-    text = replace_spelled_numbers_with_digits(text)
+    # Replace hyphens with spaces
+    text = text.replace('-', ' ')
 
     # Remove any non-word (a-z0-9_) and non-space characters except periods
     text = re.sub(r"[^\w\s.]", "", text)
 
     # Remove spaces between digits (e.g., "9 0" => "90")
     text = re.sub(r"(?<=\d)\s+(?=\d)", "", text)
-    
+
+    # This regex finds numbers that start with '0' and adds spaces between each digit
+    text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
+
     # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
 
@@ -127,17 +230,60 @@ class WhisperServer:
         self.stream = None
         self.stop_event = threading.Event()
 
+        # Will be loaded from text files:
+        self.dcs_airports = []
+        self.word_mappings = {}
+
+        # Load data from the text files
+        self.load_custom_word_files()
+
+    def load_custom_word_files(self):
+        """
+        Loads:
+          - Fuzzy words (DCS callsigns, airports, etc.) from fuzzy_words.txt
+          - Word mappings (e.g., "zero=0", "tawa=Tower") from word_mappings.txt
+        """
+
+        # 1) Load word mappings
+        if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
+            try:
+                with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        # Skip empty lines or commented lines
+                        if not line or line.startswith('#'):
+                            continue
+                        # Must be "source=target"
+                        parts = line.split('=', maxsplit=1)
+                        if len(parts) == 2:
+                            source, target = parts
+                            self.word_mappings[source.strip()] = target.strip()
+                logging.info(f"Loaded word mappings: {self.word_mappings}")
+            except Exception as e:
+                logging.error(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}")
+        else:
+            logging.warning(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.")
+
+        # 2) Load fuzzy words
+        if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
+            try:
+                with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
+                    self.dcs_airports = [
+                        line.strip() for line in f
+                        if line.strip() and not line.strip().startswith('#')
+                    ]
+                logging.info(f"Loaded fuzzy words: {self.dcs_airports}")
+            except Exception as e:
+                logging.error(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}")
+        else:
+            logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
+
     def start_recording(self):
-        """
-        Start recording to a local WAV file.
-        """
         if self.recording:
             logging.warning("Already recording—ignoring start command.")
             return
-
         logging.info("Starting recording...")
 
-        # Open SoundFile for writing (overwrite if exists)
         self.wave_file = sf.SoundFile(
             self.audio_file,
             mode='w',
@@ -145,13 +291,11 @@ class WhisperServer:
             channels=1,
             subtype='FLOAT'
         )
-
         def audio_callback(indata, frames, time_info, status):
             if status:
                 logging.warning(f"Audio Status: {status}")
             self.wave_file.write(indata)
 
-        # Create the InputStream
         self.stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
@@ -162,28 +306,19 @@ class WhisperServer:
         self.recording = True
 
     def stop_and_transcribe(self):
-        """
-        Stop recording, close the WAV file, transcribe, and send text to VoiceAttack.
-        """
         if not self.recording:
             logging.warning("Not currently recording—ignoring stop command.")
             return
-
         logging.info("Stopping recording...")
-        # Stop the stream
         self.stream.stop()
         self.stream.close()
         self.stream = None
-
-        # Close the WAV file
         self.wave_file.close()
         self.wave_file = None
         self.recording = False
 
-        # Delay to ensure OS flushes WAV file
         time.sleep(0.01)
 
-        # Check file existence & size
         logging.info(f"Checking if file exists: {self.audio_file}")
         if os.path.exists(self.audio_file):
             size = os.path.getsize(self.audio_file)
@@ -191,7 +326,6 @@ class WhisperServer:
         else:
             logging.error("File does NOT exist according to os.path.exists()!")
 
-        # Transcribe
         recognized_text = self.transcribe_audio(self.audio_file)
         if recognized_text:
             self.send_to_voiceattack(recognized_text)
@@ -199,26 +333,46 @@ class WhisperServer:
             logging.info("No transcription result.")
 
     def transcribe_audio(self, audio_path):
-        """
-        Use the loaded Whisper model to transcribe the audio file.
-        """
         try:
             logging.info(f"Transcribing {audio_path}...")
+            # Less directive prompt => doesn't forcibly push phonetic expansions:
             result = self.model.transcribe(
-                audio_path, 
-                language='en', 
-                suppress_tokens="0,11,13,30",
-                initial_prompt="This is for aviation use. Recognize phonetic alphabet, and output numbers as digits, not words",
+                audio_path,
+                language='en',
+                suppress_tokens="0,11,13,30,986",
+                initial_prompt=(
+                    "This is aviation-related speech for DCS (Digital Combat Simulator), "
+                    "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
+                    "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
+                    "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
+                    "Venom, Lobo, Cowboy, Python, Rattler, Panther, Wolf, Weasel, Wild, Ninja, Jedi, "
+                    "Hornet, Squid, Ragin, Roman, Sting, Jury, Joker, Ram, Hawk, Devil, Check, Snake, "
+                    "Dude, Thud, Gunny, Trek, Sniper, Sled, Best, Jazz, Rage, Tahoe, Bone, Dark, Vader, "
+                    "Buff, Dump, Kenworth, Heavy, Trash, Cargo, Ascot, Overlord, Magic, Wizard, Focus, "
+                    "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
+                    "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
+                    "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
+                    "alphabet (Alpha, Bravo, Charlie, etc.). "
+                )
             )
-            # Now post-process the recognized text
-            text = result["text"]
-            logging.info(f"Raw transcription result: {text}")
-            
-            # Clean up/suppress hyphens, handle spelled-out numbers, etc.
-            cleaned_text = custom_cleanup_text(text)
+            raw_text = result["text"]
+            logging.info(f"Raw transcription result: {raw_text}")
 
-            logging.info(f"Final cleaned transcription: {cleaned_text}")
-            return cleaned_text
+            # Step 1: general cleanup
+            cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
+
+            # Step 2: partial fuzzy match for your loaded DCS words + phonetic
+            fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
+                cleaned_text,
+                self.dcs_airports,
+                phonetic_alphabet,
+                dcs_threshold=85,
+                phonetic_threshold=80
+            )
+
+            logging.info(f"Cleaned transcription: {cleaned_text}")
+            logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
+            return fuzzy_corrected_text
 
         except Exception as e:
             logging.error(f"Failed to transcribe audio: {e}")
@@ -226,35 +380,45 @@ class WhisperServer:
 
     def send_to_voiceattack(self, text):
         """
-        Copy text to clipboard and optionally invoke VoiceAttack with the recognized text.
+        If text contains the trigger phrase "copy", then:
+          1) Remove that phrase from text
+          2) Send ONLY to the kneeboard (not to VoiceAttack)
+        Otherwise, send the text to VoiceAttack as usual
         """
-        # Copy to clipboard
-        pyperclip.copy(text)
-        logging.info("Text copied to clipboard using pyperclip.")
-        try:
-            keyboard.press_and_release('ctrl+alt+p')
-            logging.info("DCS Kneeboard Populated")
-        except Exception as e:
-            logging.error(f"Failed to simulate keyboard shortcut: {e}")
 
-        # If you want VoiceAttack to receive the recognized text as a command
+        trigger_phrase = "copy"
+
+        # Check for trigger phrase in a case-insensitive manner
+        if trigger_phrase in text.lower():
+            # Strip out the phrase so it doesn't go anywhere else
+            pattern = re.compile(re.escape(trigger_phrase), re.IGNORECASE)
+            text_for_kneeboard = pattern.sub("", text).strip()
+
+            # Copy the resulting text to the clipboard
+            pyperclip.copy(text_for_kneeboard)
+            logging.info("Text copied to clipboard for kneeboard.")
+
+            # Simulate kneeboard hotkeys
+            try:
+                keyboard.press_and_release('ctrl+alt+p')
+                logging.info("DCS Kneeboard Populated")
+            except Exception as e:
+                logging.error(f"Failed to simulate keyboard shortcut: {e}")
+
+            # Do NOT send to VoiceAttack if "write this down" was used
+            return
+
+        # If no "write this down" phrase, proceed normally
         if os.path.isfile(VOICEATTACK_EXE):
             try:
                 logging.info(f"Sending recognized text to VoiceAttack: {text}")
-                subprocess.call([
-                    VOICEATTACK_EXE,
-                    '-command',
-                    text
-                ])
+                subprocess.call([VOICEATTACK_EXE, '-command', text])
             except Exception as e:
                 logging.error(f"Error calling VoiceAttack: {e}")
         else:
             logging.warning(f"VoiceAttack.exe not found at: {VOICEATTACK_EXE}")
 
     def handle_command(self, cmd):
-        """
-        Handle incoming socket commands from VoiceAttack or any other client.
-        """
         cmd = cmd.strip().lower()
         logging.info(f"Received command: {cmd}")
         if cmd == "start":
@@ -268,14 +432,11 @@ class WhisperServer:
             logging.warning(f"Unknown command: {cmd}")
 
     def run_server(self):
-        """
-        Main loop to run a socket server and respond to commands.
-        """
         logging.info(f"Starting socket server on {HOST}:{PORT}...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
-            s.settimeout(1.0)  # 1s timeout so we can check stop_event occasionally
+            s.settimeout(1.0)
 
             while not self.stop_event.is_set():
                 try:
@@ -290,20 +451,15 @@ class WhisperServer:
                     logging.error(f"Socket error: {e}")
                     continue
 
-        # If we're still recording when we exit, stop gracefully
         if self.recording:
             self.stop_and_transcribe()
-
         logging.info("Server has shut down cleanly.")
 
 ###############################################################################
 # MAIN
 ###############################################################################
 def main():
-    # Load Whisper model only once
-    model = load_whisper_model(device='GPU', model_size='small')  # or 'base', 'medium', etc.
-
-    # Create and run the server
+    model = load_whisper_model(device='GPU', model_size='small.en')
     server = WhisperServer(model, device='GPU')
     server.run_server()
 
