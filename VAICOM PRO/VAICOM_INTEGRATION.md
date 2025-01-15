@@ -8,7 +8,7 @@ These instructions detail how to integrate Whisper server with VoiceAttack and V
 
 The VAICOM PRO manual can be found on the VAICOM PRO Community Discord server.
 
-An example VoiceAttack profile `WhisperAttack for VAICOM PRO.vap` is available here which is based on the default VAICOM PRO one, with updates made for Whisper support. This can be imported into VoiceAttack and used for your purposes.
+An example VoiceAttack profile [WhisperAttack for VAICOM PRO.vap](WhisperAttack%20for%20VAICOM%20PRO.vap) is available here which is based on the default VAICOM PRO one, with updates made for Whisper support. This can be imported into VoiceAttack and used for your purposes.
 
 ## VAICOM PRO VSPX Speech Processing Mode
 
@@ -25,6 +25,8 @@ for dynamic participants in sentences.
 ## VAICOM PRO keywords database
 
 The VAICOM PRO configuration contains an editor that can be used to add aliases for commands. WhisperAttack converts textual numbers to numerical values, e.g. "two" is 2. Because of this aliases will need to be added for keywords that contain textual numbers. For example, your wingman has the existing aliases of "two", "winger", and "bozo". You will need to add another alias for this with a value of `1`. This will need to be repeated for the other wingmen, and other items in the list of aliases shown in the editor. Refer to the VAICOM manual for instructions on how to do this.
+
+![keywords database](./screenshots/VAICOM%20keywords%20database.png)
 
 ## VAICOM PRO VoiceAttack profile
 
@@ -45,7 +47,17 @@ You need to disable speech recognition in VoiceAttack so that only the Whisper t
 
 For each of the TX button press and release commands you need to add an associated `Run application` action for the WhisperAttack `send_command.py`.
 
-For press buttons this needs a parameter of `start` and for release buttons this needs a parameter of `stop`
+- Open each Push-To-Talk button command
+- Go to **Other > Windows > Run application** and enter the path and `send_command.py`
+- The **With these parameters** for press buttons need a parameter of `start` and for release buttons this needs a parameter of `stop`
+- Select the added action and click **Up** so that this occurs first in the sequence
+
+![Add run application to push to talk](./screenshots/Add%20run%20application%20to%20push%20to%20talk.png)
+
+This needs to be done for all TX buttons in use.
+
+![Start and stop on all tx buttons](./screenshots/Start%20and%20stop%20on%20all%20tx%20buttons.png)
+
 
 ## Testing VAICOM integration
 
