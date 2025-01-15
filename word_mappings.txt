@@ -1,0 +1,12 @@
+gulf=Golf
+gold=Golf
+atel=Hotel
+leema=Lima
+mic=Mike
+Cubac=Quebec
+wosky=Whiskey
+weske=Whiskey
+x-ray=Xray
+tawa=Tower
+inter=Enter
+take-off=takeoff

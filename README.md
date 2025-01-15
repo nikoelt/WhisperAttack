@@ -2,7 +2,7 @@
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated blazing fast and accurate AI speech recognition engine
 
-This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation
+This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
 
 In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
 
@@ -33,7 +33,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Extremely accurate voice recognition (No more VoiceAttack misunderstanding you!)
 
 
-### VAICOM works but is still being tested and we are still learning how to best use this script with VAICOM. If you wish to help test VAICOM with the Whisper AI script, you can get more information in the VR4DCS discord server
+### VAICOM integration please go to: https://github.com/nikoelt/WhisperAttack/blob/add-vaicom-integration-instructions/VAICOM%20PRO/VAICOM_INTEGRATION.md
 
 ---
 
@@ -42,19 +42,20 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 ## Requirements
 
-- **Python 3.11**
-  - Install from [python.org](https://www.python.org/downloads/release/python-3119) or the Microsoft Store
-  - NOTE! v3.12 3.13 etc... will NOT work - PyTorch often only provides official wheels for Python 3.8 → 3.11
+- **Python 3.11** (must be in your PATH)
+  - Install from [python.org]([https://www.python.org/downloads/release/python-3119](https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe)
+  - NOTE! v3.12 3.13 etc... will NOT work - PyTorch only provides official wheels for Python 3.8 → 3.11
+
+![python](https://github.com/user-attachments/assets/1b23945c-2635-40ea-a8b1-51bbfbe2a7b4)
+
 
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
 
 - **FFmpeg** (must be in your PATH)
   - Needed by Whisper for audio decoding.
-  - Install via:
+  - Install via opening terminal and:
     - `winget install ffmpeg`
-    - Chocolatey: `choco install ffmpeg`
-    - Or download from [ffmpeg.org](https://ffmpeg.org).
 
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
@@ -64,13 +65,10 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 ---
 
-
-
 ### Installation  
-Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
-
-
-
+- Download the latest release from this repo and unarchive anywhere on your computer. I used C:/WhisperAttack as an example
+- Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
+- NOTE! The first start will take some time as dependecies and OpenAI Whsiper model will be installed
 ---
 
 
@@ -134,16 +132,18 @@ In VoiceAttack, go to **Edit Profile**.
 
 - Assign the same joystick button but check "Shortcut is invoked only when released."
 
-![image](https://github.com/user-attachments/assets/895a8585-334d-4d98-9143-f88e8a267f07)
+![image](https://github.com/user-attachments/assets/a211b949-c575-4573-a759-9d77b68d3568)
+
 ![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
 
 ---
-## DCS Kneeboard Integration - Optional
+## Clipboard & DCS Kneeboard Integration - Optional
 
 This script preserves BojoteX original vision for the code and copies the commands into clipboard for use with the Kneeboard.
 The original repo can be found here: [https://github.com/BojoteX/KneeboardWhisper](https://github.com/BojoteX/KneeboardWhisper?tab=readme-ov-file#troubleshooting)
 
 Do the following to enable DCS Kneeboard to transcribe what you say:
+Once completed, you must say "Copy" followed by what you would like to transcribe to kneeboard/clipboard
 
 ![assignments](https://github.com/user-attachments/assets/6528e6a7-4114-4fdb-a1bc-1ed68bd6a1f8)
 
@@ -199,10 +199,6 @@ ERROR: Could not find a version that satisfies the requirement torch (from versi
 ERROR: No matching distribution found for torch
 ```
 - Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
-
-### UAC Popups
-### Running as admin is not recommended! VAICOM users excepted
-- **Perform steps as outlined in [Stopping UAC Messages](#stopping-uac-messages-when-running-voiceattack-as-admin) below**
   
 ---
 
@@ -250,13 +246,5 @@ The `.en` models for English-only applications tend to perform better, especiall
 Additionally, the `turbo` model is an optimized version of `large-v3` that offers faster transcription speed with a minimal degradation in accuracy.
 
 Whisper's performance varies widely depending on the language. The figure below shows a performance breakdown of `large-v3` and `large-v2` models by language, using WERs (word error rates) or CER (character error rates, shown in *Italic*) evaluated on the Common Voice 15 and Fleurs datasets. Additional WER/CER metrics corresponding to the other models and datasets can be found in Appendix D.1, D.2, and D.4 of [the paper](https://arxiv.org/abs/2212.04356), as well as the BLEU (Bilingual Evaluation Understudy) scores for translation in Appendix D.3.
-
-## Stopping UAC Messages When Running VoiceAttack as Admin
-
-### Running VoiceAttack as administrator is not recommended. Do not do these steps unless you need to run VA with admin privileges (aka VAICOM) ###
-
-- Download Vallhala Release
-- WhisperAttack will now ask for UAC Permission to run elevated
-
 
 Enjoy your local (offline) speech recognition with OpenAI Whisper + VoiceAttack! If you run into issues, open an issue or check the logs for clues.
