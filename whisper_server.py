@@ -49,7 +49,7 @@ import unicodedata
 import tempfile
 import keyboard
 import torch
-import whisper
+from faster_whisper import WhisperModel
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
@@ -212,10 +212,13 @@ def load_whisper_model(device='GPU', model_size='small'):
     Load the Whisper model once. Return the model object.
     """
     logging.info(f"Loading Whisper model ({model_size}), device={device}")
-    if device.upper() == "GPU" and torch.cuda.is_available():
-        return whisper.load_model(model_size).to('cuda')
-    else:
-        return whisper.load_model(model_size).to('cpu')
+    if device.upper() == "GPU":
+        if torch.cuda.is_available():
+            return WhisperModel(model_size, device="cuda", compute_type="int8_float16")
+        else:
+            logging.error("cuda not available so using CPU")
+    
+    return WhisperModel(model_size, device="cpu", compute_type="int8")
 
 ###############################################################################
 # WHISPER SERVER
@@ -336,12 +339,13 @@ class WhisperServer:
         try:
             logging.info(f"Transcribing {audio_path}...")
             # Less directive prompt => doesn't forcibly push phonetic expansions:
-            result = self.model.transcribe(
+            segments, info = self.model.transcribe(
                 audio_path,
                 language='en',
-                suppress_tokens="0,11,13,30,986",
+                beam_size=5,
+                suppress_tokens=[0,11,13,30,986],
                 initial_prompt=(
-                    "This is aviation-related speech for DCS (Digital Combat Simulator), "
+                    "This is aviation-related speech for DCS Digital Combat Simulator, "
                     "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
                     "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
                     "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
@@ -352,10 +356,14 @@ class WhisperServer:
                     "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
                     "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
                     "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-                    "alphabet (Alpha, Bravo, Charlie, etc.). "
+                    "alphabet Alpha, Bravo, Charlie, X-ray. "
                 )
             )
-            raw_text = result["text"]
+
+            raw_text = ""
+            for segment in segments:
+                raw_text += f"{segment.text}"
+
             logging.info(f"Raw transcription result: {raw_text}")
 
             # Step 1: general cleanup
