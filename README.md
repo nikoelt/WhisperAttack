@@ -52,11 +52,6 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
 
-- **FFmpeg** (must be in your PATH)
-  - Needed by Whisper for audio decoding.
-  - Install via opening terminal and:
-    - `winget install ffmpeg`
-
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
 
@@ -67,7 +62,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 ### Installation  
 - Download the latest release from this repo and unarchive anywhere on your computer. I used C:/WhisperAttack as an example
-- Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
+- Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 installed above.
 - NOTE! The first start will take some time as dependecies and OpenAI Whsiper model will be installed
 ---
 
@@ -179,16 +174,6 @@ python send_command.py stop
 
 
 # Troubleshooting
-
-### File Found And Not Found
-- If the Whisper server fails to transcribe the audio file and exhibits something similar to this:
-```
-File exists, size = 98256 bytes
-Transcribing C:\Users\XXXXXX\AppData\Local\Temp\whisper_temp_recording.wav...
-Failed to transcribe audio: [WinError 2] The system cannot find the file specified
-No transcription result.
-```
-- This means FFmpeg is not installed either on your system or in the PATH (see requirements section for FFmpeg download) and making FFmpeg available in the PATH on your system should remedy the issue.
 
 ### Could not find a version that satisfies the requirement torch
 - If you get a an error like this:
