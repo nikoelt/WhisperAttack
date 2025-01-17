@@ -6,7 +6,6 @@ mic=Mike
 Cubac=Quebec
 wosky=Whiskey
 weske=Whiskey
-x-ray=Xray
 tawa=Tower
 inter=Enter
 take-off=takeoff

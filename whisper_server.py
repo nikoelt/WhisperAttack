@@ -101,7 +101,7 @@ phonetic_alphabet = [
     "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf",
     "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November",
     "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform",
-    "Victor", "Whiskey", "Xray", "Yankee", "Zulu",
+    "Victor", "Whiskey", "X-ray", "Yankee", "Zulu",
 ]
 
 ###############################################################################
@@ -347,7 +347,7 @@ class WhisperServer:
                 language='en',
                 suppress_tokens="0,11,13,30,986",
                 initial_prompt=(
-                    "This is aviation-related speech for DCS (Digital Combat Simulator), "
+                    "This is aviation-related speech for DCS Digital Combat Simulator, "
                     "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
                     "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
                     "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
@@ -358,7 +358,7 @@ class WhisperServer:
                     "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
                     "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
                     "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-                    "alphabet (Alpha, Bravo, Charlie, etc.). "
+                    "alphabet Alpha, Bravo, Charlie, X-ray. "
                 )
             )
             raw_text = result["text"]
