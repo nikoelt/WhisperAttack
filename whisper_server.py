@@ -362,7 +362,11 @@ class WhisperServer:
                 )
             )
             raw_text = result["text"]
-            logging.info(f"Raw transcription result: {raw_text}")
+            logging.info(f"Raw transcription result: '{raw_text}'")
+
+            # Ignore blank audio as nothing has been recorded
+            if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
+                return
 
             # Step 1: general cleanup
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
