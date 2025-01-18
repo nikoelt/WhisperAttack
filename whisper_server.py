@@ -10,7 +10,8 @@ REQUIRED_PACKAGES = [
     "rapidfuzz",
     "pyperclip",
     "keyboard",
-    "torch"
+    "torch",
+    "text2digits"
 ]
 
 def install_missing_packages():
@@ -55,6 +56,7 @@ import soundfile as sf
 import pyperclip
 import re
 from rapidfuzz import process
+from text2digits import text2digits
 
 ###############################################################################
 # CONFIG
@@ -65,6 +67,9 @@ PORT = 65432
 # Text-file paths for fuzzy words + word mappings
 FUZZY_WORDS_TEXT_FILE = "fuzzy_words.txt"
 WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
+
+# Library to convert textual numbers to their numerical values
+t2d = text2digits.Text2Digits()
 
 # Ensure the script is running with admin privileges
 def is_admin():
@@ -96,7 +101,7 @@ phonetic_alphabet = [
     "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf",
     "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November",
     "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform",
-    "Victor", "Whiskey", "Xray", "Yankee", "Zulu",
+    "Victor", "Whiskey", "X-ray", "Yankee", "Zulu",
 ]
 
 ###############################################################################
@@ -164,8 +169,8 @@ def correct_dcs_and_phonetics_separately(
 
 def replace_word_mappings(word_mappings, text):
     """
-    Replace spelled-out numbers or other custom words with their
-    mapped values. (E.g., "one" -> "1", "tawa" -> "Tower".)
+    Replace transcribed words with custom words from their
+    mapped values. (E.g., "gulf" -> "Golf", "tawa" -> "Tower")
     Uses case-insensitive matching on word boundaries.
     """
     for word, replacement in word_mappings.items():
@@ -176,7 +181,7 @@ def replace_word_mappings(word_mappings, text):
 def custom_cleanup_text(text, word_mappings):
     """
     1. Normalize the text.
-    2. Replace spelled-out numbers & custom words with mapped values.
+    2. Replace words with custom mapped values.
     3. Remove punctuation except periods.
     4. Remove extra spaces between digits.
     5. Remove extra whitespace.
@@ -184,20 +189,21 @@ def custom_cleanup_text(text, word_mappings):
     # Normalize unicode
     text = unicodedata.normalize('NFC', text.strip())
 
-    # Replace spelled-out numbers and custom terms
+    # Replace words with custom terms
     text = replace_word_mappings(word_mappings, text)
 
-    # Replace hyphens with spaces
-    text = text.replace('-', ' ')
+    # Convert textual numbers to their numerical value.
+    # "500 thousand two hundred and ninety four" => 500294
+    text = t2d.convert(text)
 
-    # Remove any non-word (a-z0-9_) and non-space characters except periods
-    text = re.sub(r"[^\w\s.]", "", text)
-
-    # Remove spaces between digits (e.g., "9 0" => "90")
-    text = re.sub(r"(?<=\d)\s+(?=\d)", "", text)
+    # Replace dashes between digits with spaces (e.g., "1-2" => "1 2")
+    text = re.sub(r"(?<=\d)-(?=\d)", " ", text)
 
     # This regex finds numbers that start with '0' and adds spaces between each digit
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
+    
+    # Remove any non-word (a-z0-9_) and non-space characters except periods
+    text = re.sub(r"[^\w\s.]", "", text)
 
     # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
@@ -341,7 +347,7 @@ class WhisperServer:
                 language='en',
                 suppress_tokens="0,11,13,30,986",
                 initial_prompt=(
-                    "This is aviation-related speech for DCS (Digital Combat Simulator), "
+                    "This is aviation-related speech for DCS Digital Combat Simulator, "
                     "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
                     "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
                     "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
@@ -352,7 +358,7 @@ class WhisperServer:
                     "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
                     "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
                     "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-                    "alphabet (Alpha, Bravo, Charlie, etc.). "
+                    "alphabet Alpha, Bravo, Charlie, X-ray. "
                 )
             )
             raw_text = result["text"]
