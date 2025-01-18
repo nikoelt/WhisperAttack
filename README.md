@@ -2,7 +2,7 @@
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated blazing fast and accurate AI speech recognition engine
 
-This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
+This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and creating a VA plugin and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
 
 In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
 
@@ -24,8 +24,13 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Sends recognized text into VoiceAttack.
   - Pushes transcribed text to clipboard - (perfect for voice to text DCS Chat...)
 
-- **Simple Client Script** (`send_command.py`):
-  - Sends "start", "stop", or "shutdown" commands to the server.
+- **VoiceAttack Command Plugin**
+  - Sends "start", "stop", or "shutdown" commands to the server directly through VoiceAttack.
+
+#### or
+
+- **Legacy Simple Client Script** (`send_command.py`):
+  - Sends "start", "stop", or "shutdown" commands to the server through a python script opened by VoiceAttack.
 
 - **Advantages:**
   - No repeated model loads (faster, especially with larger Whisper models).
@@ -51,6 +56,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
+  - Plugins Enabled
 
 - **FFmpeg** (must be in your PATH)
   - Needed by Whisper for audio decoding.
@@ -102,7 +108,60 @@ It is recommended to read through the steps below to understand how whisper inje
 
 <img width="840" alt="VoiceAttack_startup" src="https://github.com/user-attachments/assets/fc0bfd3c-d0aa-4501-95ce-a31fa9c78790" />
 
-### 2. Create `send_command.py` Commands
+### 2. Enable Plugin support in VoiceAttack
+- Go to **Options → General → Enable Plugin Support**.
+
+
+![EnablePluginsVA](https://github.com/user-attachments/assets/8bb6faf2-4aa4-416b-99cd-6b9b2a6c0097)
+
+### 3. Place Plugin in VoiceAttack Apps folder
+- After extracting the .zip file, Locate the `WhisperAttackServerCommand` folder and copy the entire folder
+
+![image](https://github.com/user-attachments/assets/dcd75f43-b957-4551-86bf-650468586834)
+
+- Locate the VoiceAttack Apps Folder
+
+![image](https://github.com/user-attachments/assets/413de21d-e7a8-4086-ad9f-c97354716ab3)
+
+- Paste the entire `WhisperAttackServerCommand` folder into the Apps folder
+
+![image](https://github.com/user-attachments/assets/fd856417-34b7-4f39-b3a9-bf4ea0e79871)
+
+- If the plugin is enabled and active and everything is set up correctly, VoiceAttack should give these messages on startup:
+
+![image](https://github.com/user-attachments/assets/287e0a3c-7891-40a1-96bf-842f26dccd77)
+
+
+
+### 4. Create Recording commands
+
+In VoiceAttack, go to **Edit Profile**.
+
+#### New Command for "Start Whisper Recording":
+- **When this command executes:**
+  - Go to **Other → Advancced → Execute an External Plugin Function**.
+  - **Plugin**: Point it to 'WASC V0.1beta'
+  - **Plugin Context:**
+```
+    Start Whisper Recording
+```
+- Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
+
+![Whisperattackreadme](https://github.com/user-attachments/assets/ee96bc06-8fe6-45b0-9999-076eb0e0cc00)
+
+#### Another Command for "Stop Whisper Recording":
+
+- Same steps, except the **Parameters** is:
+
+    ```
+    Stop Whisper Recording
+    ```
+
+- Assign the same joystick button but check **"Shortcut is invoked only when released."**
+![Whisperattackreadme1](https://github.com/user-attachments/assets/9c84d4f8-00c0-4525-8cda-0c0ddda24298)
+
+---
+## (Legacy Command Instructions) Create `send_command.py` Commands
 
 In VoiceAttack, go to **Edit Profile**.
 
