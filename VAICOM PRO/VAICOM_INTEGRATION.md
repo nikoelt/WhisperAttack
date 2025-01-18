@@ -30,7 +30,7 @@ The VAICOM PRO configuration contains an editor that can be used to add aliases 
 
 ## VAICOM PRO VoiceAttack profile
 
-The default VAICOM PRO profile that is imported into VoiceAttack requires modifications for running the `send_command.py` application with `start` or `stop` when TX buttons are pressed and released. There are also changes required to the import for the "When I say" keyword collections as wildcards (`*`) are not supported.
+The default VAICOM PRO profile that is imported into VoiceAttack requires modifications for executing the `WASC` (WhisperAttackSendCommand) plugin with the `Start Whisper Recording` or `Stop Whisper Recording` Plugin Context value when TX buttons are pressed and released. There are also changes required to the import for the "When I say" keyword collections as wildcards (`*`) are not supported.
 
 There are two options:
 - The first is to import the "WhisperAttack for VAICOM PRO.vap" profile provided here that contains these changes. This is the recommended option as provides a good base and can be used as a reference when updating with your own keyword collections. The key words in this profile have been updated to remove other occurrances of
@@ -45,14 +45,14 @@ You need to disable speech recognition in VoiceAttack so that only the Whisper t
 
 ### Run command for each TX button
 
-For each of the TX button press and release commands you need to add an associated `Run application` action for the WhisperAttack `send_command.py`.
+For each of the TX button press and release commands you need to add an associated `Execute external plugin` action for the WhisperAttack `WASC` plugin. See the README for instructions on installing this plugin into VoiceAttack.
 
 - Open each Push-To-Talk button command
-- Go to **Other > Windows > Run application** and enter the path and `send_command.py`
-- The **With these parameters** for press buttons need a parameter of `start` and for release buttons this needs a parameter of `stop`
+- Go to **Other > Advanced > Execute and External Plugin Function** and select the `WASC` plugin from the Plugin dropdown
+- The **Plugin Context** for press buttons need a value of `Start Whisper Recording` and for release buttons this needs a value of `Stop Whisper Recording`
 - Select the added action and click **Up** so that this occurs first in the sequence
 
-![Add run application to push to talk](./screenshots/Add%20run%20application%20to%20push%20to%20talk.png)
+![Add run application to push to talk](./screenshots/Add%20execute%20plugin%20to%20push%20to%20talk.png)
 
 This needs to be done for all TX buttons in use.
 
