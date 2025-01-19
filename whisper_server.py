@@ -227,6 +227,9 @@ class WhisperServer:
         self.dcs_airports = []
         self.word_mappings = {}
 
+        # Location to the VoiceAttack executable
+        self.voiceattack = None
+
         # Load configuration settings
         self.load_configuration()
         # Load data from the text files
@@ -254,6 +257,13 @@ class WhisperServer:
                 logging.info(f"Loaded configuration: {self.config}")
             except Exception as e:
                 logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
+
+        # Validate that the VoiceAttack executable can be found
+        voiceattack_location = self.config["voiceattack_location"]
+        if os.path.isfile(voiceattack_location):
+            self.voiceattack = voiceattack_location
+        else:
+            logging.error(f"VoiceAttack could not be located at: '{voiceattack_location}'")
 
     def load_custom_word_files(self):
         """
@@ -422,7 +432,6 @@ class WhisperServer:
           2) Send ONLY to the kneeboard (not to VoiceAttack)
         Otherwise, send the text to VoiceAttack as usual
         """
-
         trigger_phrase = "copy"
 
         # Check for trigger phrase in a case-insensitive manner
@@ -445,16 +454,15 @@ class WhisperServer:
             # Do NOT send to VoiceAttack if "write this down" was used
             return
 
-        # If no "write this down" phrase, proceed normally
-        voice_attack = self.config["voiceattack_location"]
-        if os.path.isfile(voice_attack):
-            try:
-                logging.info(f"Sending recognized text to VoiceAttack: {text}")
-                subprocess.call([voice_attack, '-command', text])
-            except Exception as e:
-                logging.error(f"Error calling VoiceAttack: {e}")
-        else:
-            logging.warning(f"VoiceAttack.exe not found at: {voice_attack}")
+        if self.voiceattack is None:
+            logging.error(f"VoiceAttack not found so command will not be sent")
+            return
+
+        try:
+            logging.info(f"Sending recognized text to VoiceAttack: {text}")
+            subprocess.call([self.voiceattack, '-command', text])
+        except Exception as e:
+            logging.error(f"Error calling VoiceAttack: {e}")
 
     def handle_command(self, cmd):
         cmd = cmd.strip().lower()
