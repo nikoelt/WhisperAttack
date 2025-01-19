@@ -217,7 +217,7 @@ This script preserves BojoteX original vision for the code and copies the comman
 The original repo can be found here: [https://github.com/BojoteX/KneeboardWhisper](https://github.com/BojoteX/KneeboardWhisper?tab=readme-ov-file#troubleshooting)
 
 Do the following to enable DCS Kneeboard to transcribe what you say:
-Once completed, you must say "Copy" followed by what you would like to transcribe to kneeboard/clipboard
+Once completed, you must say "Copy to DCS" followed by what you would like to transcribe to kneeboard/clipboard
 
 ![assignments](https://github.com/user-attachments/assets/6528e6a7-4114-4fdb-a1bc-1ed68bd6a1f8)
 
