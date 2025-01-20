@@ -427,27 +427,26 @@ class WhisperServer:
 
     def send_to_voiceattack(self, text):
         """
-        If text contains the trigger phrase "copy", then:
+        If text starts with the trigger phrase "note ", then:
           1) Remove that phrase from text
           2) Send ONLY to the kneeboard (not to VoiceAttack)
         Otherwise, send the text to VoiceAttack as usual
         """
-        trigger_phrase = "copy"
+        trigger_phrase = "note "
 
         # Check for trigger phrase in a case-insensitive manner
-        if trigger_phrase in text.lower():
+        if text.lower().startswith(trigger_phrase):
             # Strip out the phrase so it doesn't go anywhere else
-            pattern = re.compile(re.escape(trigger_phrase), re.IGNORECASE)
-            text_for_kneeboard = pattern.sub("", text).strip()
+            text_for_kneeboard = text[5:].strip()
 
             # Copy the resulting text to the clipboard
             pyperclip.copy(text_for_kneeboard)
-            logging.info("Text copied to clipboard for kneeboard.")
+            logging.info("Text copied to clipboard for DCS kneeboard.")
 
             # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
-                logging.info("DCS Kneeboard Populated")
+                logging.info("DCS kneeboard populated")
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
 
