@@ -64,7 +64,8 @@ from text2digits import text2digits
 HOST = '127.0.0.1'
 PORT = 65432
 
-# Text-file paths for fuzzy words + word mappings
+# Text-file paths for configuration, word mappings, and fuzzy words
+CONFIGURATION_SETTINGS_FILE = "settings.cfg"
 FUZZY_WORDS_TEXT_FILE = "fuzzy_words.txt"
 WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 
@@ -88,7 +89,6 @@ if not is_admin():
 TEMP_DIR = tempfile.gettempdir()
 AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
 
-VOICEATTACK_EXE = r"C:\Program Files (x86)\VoiceAttack\VoiceAttack.exe"
 SAMPLE_RATE = 16000
 
 # Logging
@@ -211,25 +211,11 @@ def custom_cleanup_text(text, word_mappings):
     return text
 
 ###############################################################################
-# WHISPER LOADING
-###############################################################################
-def load_whisper_model(device='GPU', model_size='small'):
-    """
-    Load the Whisper model once. Return the model object.
-    """
-    logging.info(f"Loading Whisper model ({model_size}), device={device}")
-    if device.upper() == "GPU" and torch.cuda.is_available():
-        return whisper.load_model(model_size).to('cuda')
-    else:
-        return whisper.load_model(model_size).to('cpu')
-
-###############################################################################
 # WHISPER SERVER
 ###############################################################################
 class WhisperServer:
-    def __init__(self, model, device='GPU'):
-        self.model = model
-        self.device = device
+    def __init__(self):
+        self.model = None
         self.recording = False
         self.audio_file = AUDIO_FILE
         self.wave_file = None
@@ -237,17 +223,53 @@ class WhisperServer:
         self.stop_event = threading.Event()
 
         # Will be loaded from text files:
+        self.config = {}
         self.dcs_airports = []
         self.word_mappings = {}
 
+        # Location to the VoiceAttack executable
+        self.voiceattack = None
+
+        # Load configuration settings
+        self.load_configuration()
         # Load data from the text files
         self.load_custom_word_files()
+        # Load the Whisper model
+        self.load_whisper_model()
+
+    def load_configuration(self):
+        """
+        Loads configuration settings
+        """
+        if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
+            try:
+                with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        # Skip empty lines or commented lines
+                        if not line or line.startswith('#'):
+                            continue
+
+                        parts = line.split('=', maxsplit=1)
+                        if len(parts) == 2:
+                            source, target = parts
+                            self.config[source.strip()] = target.strip()
+                logging.info(f"Loaded configuration: {self.config}")
+            except Exception as e:
+                logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
+
+        # Validate that the VoiceAttack executable can be found
+        voiceattack_location = self.config["voiceattack_location"]
+        if os.path.isfile(voiceattack_location):
+            self.voiceattack = voiceattack_location
+        else:
+            logging.error(f"VoiceAttack could not be located at: '{voiceattack_location}'")
 
     def load_custom_word_files(self):
         """
         Loads:
           - Fuzzy words (DCS callsigns, airports, etc.) from fuzzy_words.txt
-          - Word mappings (e.g., "zero=0", "tawa=Tower") from word_mappings.txt
+          - Word mappings (e.g., "tawa=Tower", "take-off=takeoff") from word_mappings.txt
         """
 
         # 1) Load word mappings
@@ -283,6 +305,21 @@ class WhisperServer:
                 logging.error(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}")
         else:
             logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
+
+    ###############################################################################
+    # WHISPER LOADING
+    ###############################################################################
+    def load_whisper_model(self):
+        """
+        Load the Whisper model once. Return the model object.
+        """
+        whisper_model = self.config["whisper_model"]
+        whisper_device = self.config["whisper_device"]
+        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
+        if whisper_device.upper() == "GPU" and torch.cuda.is_available():
+            self.model = whisper.load_model(whisper_model).to('cuda')
+        else:
+            self.model = whisper.load_model(whisper_model).to('cpu')
 
     def start_recording(self):
         if self.recording:
@@ -362,7 +399,11 @@ class WhisperServer:
                 )
             )
             raw_text = result["text"]
-            logging.info(f"Raw transcription result: {raw_text}")
+            logging.info(f"Raw transcription result: '{raw_text}'")
+
+            # Ignore blank audio as nothing has been recorded
+            if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
+                return
 
             # Step 1: general cleanup
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
@@ -386,43 +427,41 @@ class WhisperServer:
 
     def send_to_voiceattack(self, text):
         """
-        If text contains the trigger phrase "copy", then:
+        If text starts with the trigger phrase "note ", then:
           1) Remove that phrase from text
           2) Send ONLY to the kneeboard (not to VoiceAttack)
         Otherwise, send the text to VoiceAttack as usual
         """
-
-        trigger_phrase = "copy"
+        trigger_phrase = "note "
 
         # Check for trigger phrase in a case-insensitive manner
-        if trigger_phrase in text.lower():
+        if text.lower().startswith(trigger_phrase):
             # Strip out the phrase so it doesn't go anywhere else
-            pattern = re.compile(re.escape(trigger_phrase), re.IGNORECASE)
-            text_for_kneeboard = pattern.sub("", text).strip()
+            text_for_kneeboard = text[5:].strip()
 
             # Copy the resulting text to the clipboard
             pyperclip.copy(text_for_kneeboard)
-            logging.info("Text copied to clipboard for kneeboard.")
+            logging.info("Text copied to clipboard for DCS kneeboard.")
 
             # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
-                logging.info("DCS Kneeboard Populated")
+                logging.info("DCS kneeboard populated")
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
 
             # Do NOT send to VoiceAttack if "write this down" was used
             return
 
-        # If no "write this down" phrase, proceed normally
-        if os.path.isfile(VOICEATTACK_EXE):
-            try:
-                logging.info(f"Sending recognized text to VoiceAttack: {text}")
-                subprocess.call([VOICEATTACK_EXE, '-command', text])
-            except Exception as e:
-                logging.error(f"Error calling VoiceAttack: {e}")
-        else:
-            logging.warning(f"VoiceAttack.exe not found at: {VOICEATTACK_EXE}")
+        if self.voiceattack is None:
+            logging.error(f"VoiceAttack not found so command will not be sent")
+            return
+
+        try:
+            logging.info(f"Sending recognized text to VoiceAttack: {text}")
+            subprocess.call([self.voiceattack, '-command', text])
+        except Exception as e:
+            logging.error(f"Error calling VoiceAttack: {e}")
 
     def handle_command(self, cmd):
         cmd = cmd.strip().lower()
@@ -465,8 +504,8 @@ class WhisperServer:
 # MAIN
 ###############################################################################
 def main():
-    model = load_whisper_model(device='GPU', model_size='small.en')
-    server = WhisperServer(model, device='GPU')
+    
+    server = WhisperServer()
     server.run_server()
 
 if __name__ == "__main__":

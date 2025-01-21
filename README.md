@@ -2,7 +2,7 @@
 
 This repository provides a single-server approach for using OpenAI Whisper locally with VoiceAttack, replacing Windows Speech Recognition with a fully offline, GPU-accelerated blazing fast and accurate AI speech recognition engine
 
-This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and creating a VA plugin and finally [@Sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
+This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and creating a VA plugin and finally [@sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
 
 In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
 
@@ -65,6 +65,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
+  - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
 
 
 
@@ -94,6 +95,20 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 NOTE: Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
 
 ![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+
+---
+
+## Configuration
+
+The `settings.cfg` file contains configuration for WhisperAttack.
+
+The default values should cover most cases but can be changed:
+
+- `whisper_model` - The Whisper model to use, `small` by default. See the table at the bottom of the README file for options.
+  - By default this is `small` but can be updated to `small.en` if not requiring multiligual support
+  - A smaller size can be specified for reducing the amount of VRAM used
+- `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
+- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location. 
 
 ---
 
@@ -202,7 +217,7 @@ This script preserves BojoteX original vision for the code and copies the comman
 The original repo can be found here: [https://github.com/BojoteX/KneeboardWhisper](https://github.com/BojoteX/KneeboardWhisper?tab=readme-ov-file#troubleshooting)
 
 Do the following to enable DCS Kneeboard to transcribe what you say:
-Once completed, you must say "Copy" followed by what you would like to transcribe to kneeboard/clipboard
+Once completed, you must say "Note" followed by what you would like to transcribe to kneeboard/clipboard
 
 ![assignments](https://github.com/user-attachments/assets/6528e6a7-4114-4fdb-a1bc-1ed68bd6a1f8)
 
@@ -237,7 +252,7 @@ python send_command.py stop
 ---
 
 
-# Troubleshooting
+## Troubleshooting
 
 ### File Found And Not Found
 - If the Whisper server fails to transcribe the audio file and exhibits something similar to this:
@@ -261,9 +276,9 @@ ERROR: No matching distribution found for torch
   
 ---
 
-# Advanced Configuration
+## Advanced Configuration
 
-## Adding back Punctuation
+### Adding back Punctuation
 
 If you look at whisper_server.py code, you see the following call:
 
@@ -275,18 +290,18 @@ You’d modify it to:
 
 Everything else stays the same. Whisper will then start adding punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
 
-## Performance (AI Model)
-- If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by reducing the model size (extra information on the models is available in the table below) in the `whisper_server.py` file as follows: 
-- Change the Whisper model by changing "small" to another model (see table) inside the python script as found:
+### Performance (AI Model)
 
-    ```python
-    model = load_whisper_model(device='GPU', model_size='small')
-    ```
+If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by changing the model size (extra information on the models is available in the table below) in the `settings.cfg` file as follows:
+
+```console
+whisper_model=small
+```
 
 - Using smaller models will reduce VRAM and compute costs. See below for a full speed breakdown
 - First activation with a new AI model will prompt the model to be downloaded which may take an extended amount of time depending on internet speed.
 
-### Available models and languages
+## Available models and languages
 
 There are six model sizes, four with English-only versions, offering speed and accuracy tradeoffs.
 Below are the names of the available models and their approximate memory requirements and inference speed relative to the large model.
