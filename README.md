@@ -50,7 +50,7 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 ## Requirements
 
 - **Python 3.11** (must be in your PATH)
-  - Install from [python.org]([https://www.python.org/downloads/release/python-3119](https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe)
+  - Install from [python.org](https://www.python.org/downloads/release/python-3119), use [this link](https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe) for the Windows (64-bit) installer.
   - NOTE! v3.12 3.13 etc... will NOT work - PyTorch only provides official wheels for Python 3.8 → 3.11
 
 ![python](https://github.com/user-attachments/assets/1b23945c-2635-40ea-a8b1-51bbfbe2a7b4)
