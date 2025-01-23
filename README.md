@@ -38,11 +38,13 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Extremely accurate voice recognition (No more VoiceAttack misunderstanding you!)
 
 
-### VAICOM integration please go to: https://github.com/nikoelt/WhisperAttack/blob/add-vaicom-integration-instructions/VAICOM%20PRO/VAICOM_INTEGRATION.md
+## VAICOM integration
+
+Instructions for integrating with VAICOM can be located in the [VAICOM INTEGRATION](./VAICOM%20PRO/VAICOM_INTEGRATION.md) documentation.
+
+A VoiceAttack profile for Whisper VAICOM integration is available in this repository and linked from those instructions.
 
 ---
-
-
 
 
 ## Requirements
