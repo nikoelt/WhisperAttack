@@ -4,7 +4,7 @@ import pkg_resources
 
 # ------------- AUTO-INSTALL MISSING DEPENDENCIES -------------
 REQUIRED_PACKAGES = [
-    "whisper",
+    "openai-whisper",
     "sounddevice",
     "soundfile",   # note: the actual PyPI package name is "SoundFile"
     "rapidfuzz",
