@@ -202,9 +202,11 @@ def custom_cleanup_text(text, word_mappings):
     # This regex finds numbers that start with '0' and adds spaces between each digit
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
 
-    # Remove any non-word (a-z0-9_) and non-space characters from words,
-    # except periods and dashes (unless the dash has whitespace around it)
-    text = re.sub(r"([^\w\s.])([\s-])", "", text)
+    # Replace any non-word (a-z0-9_) and non-space characters from words,
+    # except periods and dashes (unless the dash has whitespace around it),
+    # with a space character. Using a space character will prevent additional
+    # whitespace from being stripped, multiple spaces are removed in the step.
+    text = re.sub(r"([^\w\s.])([\s-])", " ", text)
 
     # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
