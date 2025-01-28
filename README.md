@@ -69,34 +69,18 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
   - Whisper runs faster on an NVIDIA GPU with CUDA.
   - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
 
-
-
-
 ---
 
-### Installation  
-- Download the latest release from this repo and unarchive anywhere on your computer. I used C:/WhisperAttack as an example
-- Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
-- NOTE! The first start will take some time as dependecies and OpenAI Whsiper model will be installed
----
+## Installation  
+- Download the latest release from this repo and unarchive anywhere on your computer
+- Make sure you have Python 3.11 and FFmpeg installed above
+- Run the below command to install the Python libraries this requires
 
-
-
-## Running the Whisper Server
-1. Double click whisper_server.py
-
-- You’ll see logs like:
-
-```
-2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
-2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
+```console
+pip install -r requirements.txt
 ```
 
-- Leave this terminal open. The server must keep running to handle start/stop commands.
-
-NOTE: Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
-
-![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+NOTE! The first start will take some time as the OpenAI Whsiper model will be downloaded and installed.
 
 ---
 
@@ -111,6 +95,25 @@ The default values should cover most cases but can be changed:
   - A smaller size can be specified for reducing the amount of VRAM used
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
 - `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location. 
+
+---
+
+## Running the Whisper Server
+
+Double click the `whisper_server.py` file. This will open a terminal window and start the server.
+
+The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
+
+```
+2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
+2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
+```
+
+Leave the terminal window open. The server must keep running to handle start/stop commands.
+
+NOTE: Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
+
+![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
 
 ---
 

@@ -1,43 +1,3 @@
-import sys
-import subprocess
-import pkg_resources
-
-# ------------- AUTO-INSTALL MISSING DEPENDENCIES -------------
-REQUIRED_PACKAGES = [
-    "whisper",
-    "sounddevice",
-    "soundfile",   # note: the actual PyPI package name is "SoundFile"
-    "rapidfuzz",
-    "pyperclip",
-    "keyboard",
-    "torch",
-    "text2digits"
-]
-
-def install_missing_packages():
-    """Check if each required package is installed; if not, install it."""
-    installed_packages = {pkg.key for pkg in pkg_resources.working_set}
-    missing = []
-    for package in REQUIRED_PACKAGES:
-        # For case-insensitivity in package name checks
-        # e.g., SoundFile is listed as soundfile in 'installed_packages'
-        if package.lower() not in installed_packages:
-            missing.append(package)
-
-    if missing:
-        print(f"Installing missing packages: {missing}")
-        python_exe = sys.executable
-        subprocess.check_call(
-            [python_exe, "-m", "pip", "install", "--upgrade"] + missing
-        )
-    else:
-        print("All required packages are already installed.")
-
-# Attempt to install missing packages
-install_missing_packages()
-
-# Now that we've attempted to install them, re-import everything
-# to ensure they’re actually present in the current session.
 import os
 import sys
 import ctypes
@@ -50,7 +10,7 @@ import unicodedata
 import tempfile
 import keyboard
 import torch
-import whisper
+from faster_whisper import WhisperModel
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
@@ -92,7 +52,12 @@ AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
 SAMPLE_RATE = 16000
 
 # Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+LOCAL_APPDATA_DIR = os.getenv('LOCALAPPDATA')
+WHISPER_APPDATA_DIR = os.path.join(LOCAL_APPDATA_DIR , "WhisperAttack")
+# Create the AppData directory for WhisterAttack if it does not already exist
+os.makedirs(WHISPER_APPDATA_DIR, exist_ok=True)
+LOG_FILE = os.path.join(WHISPER_APPDATA_DIR, "WhisperAttack.log")
+logging.basicConfig(filename=LOG_FILE, filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 ###############################################################################
 # PHONETIC ALPHABET
@@ -202,9 +167,11 @@ def custom_cleanup_text(text, word_mappings):
     # This regex finds numbers that start with '0' and adds spaces between each digit
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
 
-    # Remove any non-word (a-z0-9_) and non-space characters from words,
-    # except periods and dashes (unless the dash has whitespace around it)
-    text = re.sub(r"([^\w\s.])([\s-])", "", text)
+    # Replace any non-word (a-z0-9_) and non-space characters from words,
+    # except periods and dashes (unless the dash has whitespace around it),
+    # with a space character. Using a space character will prevent additional
+    # whitespace from being stripped, multiple spaces are removed in the step.
+    text = re.sub(r"([^\w\s.])([\s-])", " ", text)
 
     # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
@@ -317,10 +284,18 @@ class WhisperServer:
         whisper_model = self.config["whisper_model"]
         whisper_device = self.config["whisper_device"]
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
-        if whisper_device.upper() == "GPU" and torch.cuda.is_available():
-            self.model = whisper.load_model(whisper_model).to('cuda')
-        else:
-            self.model = whisper.load_model(whisper_model).to('cpu')
+        # if whisper_device.upper() == "GPU" and torch.cuda.is_available():
+        #     self.model = whisper.load_model(whisper_model).to('cuda')
+        # else:
+        #     self.model = whisper.load_model(whisper_model).to('cpu')
+        if whisper_device.upper() == "GPU":
+            if torch.cuda.is_available():
+                self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
+                return
+            else:
+                logging.error("cuda not available so using CPU")
+        
+        self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
 
     def start_recording(self):
         if self.recording:
@@ -380,10 +355,32 @@ class WhisperServer:
         try:
             logging.info(f"Transcribing {audio_path}...")
             # Less directive prompt => doesn't forcibly push phonetic expansions:
-            result = self.model.transcribe(
+            # result = self.model.transcribe(
+            #     audio_path,
+            #     language='en',
+            #     suppress_tokens="0,11,13,30,986",
+            #     initial_prompt=(
+            #         "This is aviation-related speech for DCS Digital Combat Simulator, "
+            #         "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
+            #         "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
+            #         "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
+            #         "Venom, Lobo, Cowboy, Python, Rattler, Panther, Wolf, Weasel, Wild, Ninja, Jedi, "
+            #         "Hornet, Squid, Ragin, Roman, Sting, Jury, Joker, Ram, Hawk, Devil, Check, Snake, "
+            #         "Dude, Thud, Gunny, Trek, Sniper, Sled, Best, Jazz, Rage, Tahoe, Bone, Dark, Vader, "
+            #         "Buff, Dump, Kenworth, Heavy, Trash, Cargo, Ascot, Overlord, Magic, Wizard, Focus, "
+            #         "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
+            #         "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
+            #         "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
+            #         "alphabet Alpha, Bravo, Charlie, X-ray. "
+            #     )
+            # )
+            # raw_text = result["text"]
+
+            segments, info = self.model.transcribe(
                 audio_path,
                 language='en',
-                suppress_tokens="0,11,13,30,986",
+                beam_size=5,
+                suppress_tokens=[0,11,13,30,986],
                 initial_prompt=(
                     "This is aviation-related speech for DCS Digital Combat Simulator, "
                     "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
@@ -399,7 +396,13 @@ class WhisperServer:
                     "alphabet Alpha, Bravo, Charlie, X-ray. "
                 )
             )
-            raw_text = result["text"]
+            # print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+
+            raw_text = ""
+            for segment in segments:
+                # print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+                raw_text += f"{segment.text}"
+
             logging.info(f"Raw transcription result: '{raw_text}'")
 
             # Ignore blank audio as nothing has been recorded
