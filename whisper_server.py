@@ -16,17 +16,27 @@ REQUIRED_PACKAGES = [
 
 def install_missing_packages():
     """Check if each required package is installed; if not, install it."""
+    python_exe = sys.executable
+
     installed_packages = {pkg.key for pkg in pkg_resources.working_set}
     missing = []
     for package in REQUIRED_PACKAGES:
         # For case-insensitivity in package name checks
         # e.g., SoundFile is listed as soundfile in 'installed_packages'
         if package.lower() not in installed_packages:
-            missing.append(package)
+            if package.lower() == "torch":
+                # A specific torch library version needs to be installed for CUDA support.
+                # If the standard torch is installed then CUDA is not available and the
+                # whisper attack server will use the CPU instead of the GPU
+                subprocess.check_call(
+                    [python_exe, "-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu118"]
+                )
+            else:
+                missing.append(package)
 
+    # Install any other missing packages
     if missing:
         print(f"Installing missing packages: {missing}")
-        python_exe = sys.executable
         subprocess.check_call(
             [python_exe, "-m", "pip", "install", "--upgrade"] + missing
         )
