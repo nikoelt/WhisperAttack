@@ -354,28 +354,6 @@ class WhisperServer:
     def transcribe_audio(self, audio_path):
         try:
             logging.info(f"Transcribing {audio_path}...")
-            # Less directive prompt => doesn't forcibly push phonetic expansions:
-            # result = self.model.transcribe(
-            #     audio_path,
-            #     language='en',
-            #     suppress_tokens="0,11,13,30,986",
-            #     initial_prompt=(
-            #         "This is aviation-related speech for DCS Digital Combat Simulator, "
-            #         "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
-            #         "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
-            #         "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
-            #         "Venom, Lobo, Cowboy, Python, Rattler, Panther, Wolf, Weasel, Wild, Ninja, Jedi, "
-            #         "Hornet, Squid, Ragin, Roman, Sting, Jury, Joker, Ram, Hawk, Devil, Check, Snake, "
-            #         "Dude, Thud, Gunny, Trek, Sniper, Sled, Best, Jazz, Rage, Tahoe, Bone, Dark, Vader, "
-            #         "Buff, Dump, Kenworth, Heavy, Trash, Cargo, Ascot, Overlord, Magic, Wizard, Focus, "
-            #         "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
-            #         "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
-            #         "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-            #         "alphabet Alpha, Bravo, Charlie, X-ray. "
-            #     )
-            # )
-            # raw_text = result["text"]
-
             segments, info = self.model.transcribe(
                 audio_path,
                 language='en',
@@ -396,11 +374,9 @@ class WhisperServer:
                     "alphabet Alpha, Bravo, Charlie, X-ray. "
                 )
             )
-            # print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
 
             raw_text = ""
             for segment in segments:
-                # print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
                 raw_text += f"{segment.text}"
 
             logging.info(f"Raw transcription result: '{raw_text}'")
@@ -454,7 +430,7 @@ class WhisperServer:
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
 
-            # Do NOT send to VoiceAttack if "write this down" was used
+            # Do NOT send to VoiceAttack if trigger word "note " was used
             return
 
         if self.voiceattack is None:
