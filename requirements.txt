@@ -1,0 +1,9 @@
+keyboard
+faster_whisper
+pyperclip
+rapidfuzz
+sounddevice
+soundfile
+text2digits
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
