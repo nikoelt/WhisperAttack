@@ -187,33 +187,6 @@ Once completed, you must say "Note" followed by what you would like to transcrib
 
 ---
 
-## How It Works
-
-### `whisper_server.py`
-
-- **On startup:**
-  - Loads the Whisper model (e.g., `small`) on GPU or CPU.
-  - Opens a socket server at `127.0.0.1:65432`.
-  
-- **Commands:**
-  - `start`: Begin recording to `whisper_temp_recording.wav`.
-  - `stop`: Stop recording, transcribe with Whisper, copy text to clipboard, send to VoiceAttack.
-  - `shutdown`: Gracefully stops the server.
-
-### `send_command.py`
-
-- Sends a command (e.g., `start`, `stop`) to the server’s socket.
-- Example usage:
-
-```bash
-python send_command.py start
-# speak into your mic...
-python send_command.py stop
-```
-
----
-
-
 ## Troubleshooting
 
 ### File Found And Not Found
