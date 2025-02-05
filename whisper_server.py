@@ -137,7 +137,7 @@ def correct_dcs_and_phonetics_separately(
 
     for token in tokens:
         # If it's super short, skip
-        if len(token) < 3:
+        if len(token) < 6:
             corrected_tokens.append(token)
             continue
 
