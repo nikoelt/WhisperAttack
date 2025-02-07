@@ -9,3 +9,4 @@ weske=Whiskey
 tawa=Tower
 inter=Enter
 take-off=takeoff
+pre-contact=precontact

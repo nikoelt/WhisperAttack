@@ -17,17 +17,25 @@ The command prompt will be prefixed with `PS` to show that this is a PowerShell 
 Allow PowerShell to execute the command to activate the Python virtual environment. The `-Scope Process` means that it is allowed just for this process, e.g. if run from within Visual Studio Code, vs. being set globally which could be a security risk.
 
 ```console
-PS D:\src\github\WhisperAttack> Set-ExecutionPolicy Unrestricted -Scope Process
+Set-ExecutionPolicy Unrestricted -Scope Process
 ```
 
-### PyInstaller
+### Starting with a clean environment
 
-The Python PyInstaller will be used to build the application.
+When PyInstaller builds the application it will look in your local Python library paths, as well as the paths in the virtual environment
+to locate the packages it needs. To ensure that you have a clean environment you should uninstall any packages in your local cache.
 
-Install PyInstaller to build the exe file.
+Run the below command to uninstall the packages that will be reinstalled as part of the build. Accept all prompts to remove packages.
+
+```command
+pip uninstall -r requirements.txt
+```
+
+**NOTE**: If you want to run the `whisper_server.py` file locally without building and running an executable you can reinstall these
+using the below command:
 
 ```console
-PS D:\src\github\WhisperAttack> pip install pyinstaller
+pip install -r requirements.txt
 ```
 
 ### Building the application
@@ -35,25 +43,32 @@ PS D:\src\github\WhisperAttack> pip install pyinstaller
 Create the Python virtual environment so that dependencies are installed here to keep separate from the global ones.
 
 ```console
-PS D:\src\github\WhisperAttack> python -m venv .venv
+python -m venv .venv
 ```
 
 Activate the virtual environment so you're working in it. Your command prompt will now have a `(.venv)` prefix so that you know it is active.
 
 ```console
-PS D:\src\github\WhisperAttack> .venv\Scripts\activate
+.venv\Scripts\Activate.ps1
+```
+
+Install PyInstaller so that it can build the executable. This must be done after activating the virtual environment
+so that it can locate the dependencies in the virtual environment.
+
+```console
+pip install pyinstaller
 ```
 
 Install the Python dependencies required by WhisperAttack.
 
 ```console
-(.venv) PS D:\src\github\WhisperAttack> pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 Run PyInstaller to create an executable of WhisperAttack, this will be created in the `dist` directory.
 
 ```console
-(.venv) PS D:\src\github\WhisperAttack> pyinstaller --onefile whisper_server.py
+pyinstaller --onefile whisper_server.py
 ```
 
 ### Running the application
@@ -69,5 +84,5 @@ Check the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file
 Once you are happy with the executable and do not need to rebuild with any further changes you can run the below command to deactivate the virtual environment and then close the terminal.
 
 ```console
-(.venv) PS D:\src\github\WhisperAttack> .\.venv\Scripts\deactivate.bat
+.\.venv\Scripts\deactivate.bat
 ```
