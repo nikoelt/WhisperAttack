@@ -27,11 +27,6 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 - **VoiceAttack Command Plugin**
   - Sends "start", "stop", or "shutdown" commands to the server directly through VoiceAttack.
 
-#### or
-
-- **Legacy Simple Client Script** (`send_command.py`):
-  - Sends "start", "stop", or "shutdown" commands to the server through a python script opened by VoiceAttack.
-
 - **Advantages:**
   - No repeated model loads (faster, especially with larger Whisper models).
   - Push-to-Talk style workflow with VoiceAttack press & release.
@@ -181,41 +176,6 @@ In VoiceAttack, go to **Edit Profile**.
 ![Whisperattackreadme1](https://github.com/user-attachments/assets/9c84d4f8-00c0-4525-8cda-0c0ddda24298)
 
 ---
-## (Legacy Command Instructions) Create `send_command.py` Commands
-
-In VoiceAttack, go to **Edit Profile**.
-
-#### New Command for "Start Whisper Recording":
-
-- **When this command executes:**
-  - Go to **Other → Windows → Run an application**.
-  - **Application**: Point it to 'send_command.py'
-  - **Parameters:**
-
-   ```
-    start
-    ```
-   
-- Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
-
-![image](https://github.com/user-attachments/assets/df309ad5-c3be-40ef-98ce-c3c6c0c8e307)
-
-
-#### Another Command for "Stop Whisper Recording":
-
-- Same steps, except the **Parameters** is:
-
-    ```
-    stop
-    ```
-
-- Assign the same joystick button but check "Shortcut is invoked only when released."
-
-![image](https://github.com/user-attachments/assets/a211b949-c575-4573-a759-9d77b68d3568)
-
-![image](https://github.com/user-attachments/assets/4b8d6980-9bf0-43c6-b9f6-d85a14b5e70b)
-
----
 ## Clipboard & DCS Kneeboard Integration - Optional
 
 This script preserves BojoteX original vision for the code and copies the commands into clipboard for use with the Kneeboard.
@@ -229,33 +189,6 @@ Once completed, you must say "Note" followed by what you would like to transcrib
 ![kneeboardwhisper](https://github.com/user-attachments/assets/71874a7d-5c09-4b8c-b174-8693653ac82f)
 
 ---
-
-## How It Works
-
-### `whisper_server.py`
-
-- **On startup:**
-  - Loads the Whisper model (e.g., `small`) on GPU or CPU.
-  - Opens a socket server at `127.0.0.1:65432`.
-  
-- **Commands:**
-  - `start`: Begin recording to `whisper_temp_recording.wav`.
-  - `stop`: Stop recording, transcribe with Whisper, copy text to clipboard, send to VoiceAttack.
-  - `shutdown`: Gracefully stops the server.
-
-### `send_command.py`
-
-- Sends a command (e.g., `start`, `stop`) to the server’s socket.
-- Example usage:
-
-```bash
-python send_command.py start
-# speak into your mic...
-python send_command.py stop
-```
-
----
-
 
 ## Troubleshooting
 
