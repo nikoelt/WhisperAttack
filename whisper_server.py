@@ -284,10 +284,7 @@ class WhisperServer:
         whisper_model = self.config["whisper_model"]
         whisper_device = self.config["whisper_device"]
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
-        # if whisper_device.upper() == "GPU" and torch.cuda.is_available():
-        #     self.model = whisper.load_model(whisper_model).to('cuda')
-        # else:
-        #     self.model = whisper.load_model(whisper_model).to('cpu')
+        
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
                 self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
