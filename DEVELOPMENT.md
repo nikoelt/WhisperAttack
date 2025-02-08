@@ -31,8 +31,7 @@ Run the below command to uninstall the packages that will be reinstalled as part
 pip uninstall -r requirements.txt
 ```
 
-**NOTE**: If you want to run the `whisper_server.py` file locally without building and running an executable you can reinstall these
-using the below command:
+**NOTE**: If you want to run the `whisper_server.py` file locally without building and running an executable you can reinstall these using the below command:
 
 ```console
 pip install -r requirements.txt

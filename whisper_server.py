@@ -17,6 +17,8 @@ import pyperclip
 import re
 from rapidfuzz import process
 from text2digits import text2digits
+import pystray
+from PIL import Image
 
 ###############################################################################
 # CONFIG
@@ -449,7 +451,7 @@ class WhisperServer:
             self.stop_and_transcribe()
         elif cmd == "shutdown":
             logging.info("Received shutdown command. Stopping server.")
-            self.stop_event.set()
+            shut_down(icon)
         else:
             logging.warning(f"Unknown command: {cmd}")
 
@@ -460,7 +462,7 @@ class WhisperServer:
             s.listen()
             s.settimeout(1.0)
 
-            while not self.stop_event.is_set():
+            while not exit_event.is_set():
                 try:
                     conn, addr = s.accept()
                     with conn:
@@ -477,13 +479,45 @@ class WhisperServer:
             self.stop_and_transcribe()
         logging.info("Server has shut down cleanly.")
 
+def startup(icon):
+    # Display the system tray icon
+    icon.visible = True
+    try:
+        # Start the WhisperAttack server
+        server = WhisperServer()
+        server.run_server()
+    except Exception as e:
+        logging.error(f"Server failed to start: {e}")
+
+def shut_down(icon):
+    logging.info("Shutting down server...")
+    # Stop the whisper server
+    exit_event.set()
+    # Hide the system tray icon
+    icon.visible = False
+    # Stop the system tray icon
+    icon.stop()
+
 ###############################################################################
 # MAIN
 ###############################################################################
 def main():
-    
-    server = WhisperServer()
-    server.run_server()
+     # This event is used to stop the loop.
+    global exit_event
+    exit_event = threading.Event()
+    global icon
+
+    try:
+        image = Image.open("whisper_attack_icon.png")
+        icon = pystray.Icon(
+            "WA", image, "WhisperAttack",
+            menu=pystray.Menu(pystray.MenuItem("Exit", shut_down))
+        )
+        # Start the system tray icon and pass it the whisper attack
+        # startup callback handler to start the server running.
+        icon.run(setup=startup)
+    except Exception as e:
+        logging.error(f"Server error: {e}")
 
 if __name__ == "__main__":
     main()
