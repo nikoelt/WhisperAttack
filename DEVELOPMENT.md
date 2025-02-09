@@ -64,19 +64,34 @@ Install the Python dependencies required by WhisperAttack.
 pip install -r requirements.txt
 ```
 
-Run PyInstaller to create an executable of WhisperAttack, this will be created in the `dist` directory.
+Run PyInstaller to create an executable of WhisperAttack, this will be created in the `dist\whisper_server` directory.
+
+The `--noconsole` parameter means that when WhisperAttack is run no window is displayed. A WhisperAttack icon will be displayed in the Windows system tray.
 
 ```console
-pyinstaller --onefile whisper_server.py
+pyinstaller --onedir --noconsole whisper_server.py
 ```
 
-### Running the application
+### Packaging the application
 
-Copy the `dist\whisper_server.exe` file into the same directory containing the `settings.cfg`, `word_mappings.txt`, and `fuzzy_words.txt` files so that it can locate these when it is run.
+Copy the following files into the `dist\whisper_server` directory as these must be located beside the executable
+
+- settings.cfg
+- word_mappings.txt
+- fuzzy_words.txt
+- whisper_attack_icon.png
+
+The `whisper_server` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice.
+
+The contents of the `whisper_server` folder can be zipped up if needing to distribute.
+
+### Running the application
 
 Double-click the `whisper_server.exe` file to run it. It may take a little while the first time it runs as it downloads the Whisper model.
 
 Check the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file. You may need to close and reopen the log file if your editor does not automatically update when lines are added to the file.
+
+The application can be exited using either by right-clicking the WhisperAttack icon in the system tray, or by closing VoiceAttack.
 
 ### Cleaning up after the build
 
