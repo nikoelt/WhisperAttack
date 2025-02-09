@@ -21,13 +21,10 @@ def install_missing_packages():
     installed_packages = {pkg.key for pkg in pkg_resources.working_set}
     missing = []
     for package in REQUIRED_PACKAGES:
-        # For case-insensitivity in package name checks
-        # e.g., SoundFile is listed as soundfile in 'installed_packages'
+        # For case-insensitivity in package name checks.
         if package.lower() not in installed_packages:
             if package.lower() == "torch":
-                # A specific torch library version needs to be installed for CUDA support.
-                # If the standard torch is installed then CUDA is not available and the
-                # whisper attack server will use the CPU instead of the GPU
+                # Install the torch package from the PyTorch channel with CUDA support.
                 subprocess.check_call(
                     [python_exe, "-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu118"]
                 )
@@ -43,19 +40,16 @@ def install_missing_packages():
     else:
         print("All required packages are already installed.")
 
-# Attempt to install missing packages
+# First, auto-install the required Python packages.
 install_missing_packages()
 
-# Now that we've attempted to install them, re-import everything
-# to ensure they’re actually present in the current session.
+# Re-import modules to ensure they’re available in the current session.
 import os
-import sys
 import ctypes
 import socket
 import threading
 import time
 import logging
-import subprocess
 import unicodedata
 import tempfile
 import keyboard
@@ -67,6 +61,41 @@ import pyperclip
 import re
 from rapidfuzz import process
 from text2digits import text2digits
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+###############################################################################
+# ENSURE FFmpeg IS INSTALLED
+###############################################################################
+def ensure_ffmpeg_installed():
+    """
+    Checks if FFmpeg is installed.
+    If not, attempts to install it using winget.
+    This function assumes the script is running with administrative privileges.
+    """
+    try:
+        subprocess.run(["ffmpeg", "-version"],
+                       stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL,
+                       check=True)
+        logging.info("FFmpeg is already installed.")
+    except Exception:
+        logging.info("FFmpeg not found. Attempting to install FFmpeg using winget...")
+        # Verify that winget is available.
+        try:
+            subprocess.run(["winget", "--version"],
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+        except Exception:
+            logging.error("Winget is not available. Please install FFmpeg manually from https://ffmpeg.org/download.html")
+            return
+        try:
+            subprocess.check_call(["winget", "install", "--id=ffmpeg.ffmpeg", "-e"])
+            logging.info("FFmpeg installation completed.")
+        except Exception as e:
+            logging.error(f"Failed to install FFmpeg via winget: {e}")
 
 ###############################################################################
 # CONFIG
@@ -82,11 +111,11 @@ WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
-# Ensure the script is running with admin privileges
+# Ensure the script is running with administrative privileges
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
+    except Exception:
         return False
 
 if not is_admin():
@@ -95,14 +124,14 @@ if not is_admin():
     )
     sys.exit()
 
+# With admin rights confirmed, ensure FFmpeg is installed.
+ensure_ffmpeg_installed()
+
 # Use the system's temporary folder for the WAV file
 TEMP_DIR = tempfile.gettempdir()
 AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
 
 SAMPLE_RATE = 16000
-
-# Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 ###############################################################################
 # PHONETIC ALPHABET
@@ -125,9 +154,7 @@ def correct_dcs_and_phonetics_separately(
     phonetic_threshold=80
 ):
     """
-    Applies fuzzy matching for your loaded DCS callsigns (dcs_list)
-    and the phonetic_alphabet. Each token is compared to both lists.
-    Whichever is the best match wins.
+    Applies fuzzy matching for DCS callsigns and the phonetic alphabet.
     """
     tokens = text.split()
     corrected_tokens = []
@@ -136,7 +163,6 @@ def correct_dcs_and_phonetics_separately(
     phon_lower = [x.lower() for x in phonetic_list]
 
     for token in tokens:
-        # If it's super short, skip
         if len(token) < 6:
             corrected_tokens.append(token)
             continue
@@ -153,7 +179,6 @@ def correct_dcs_and_phonetics_separately(
         best_token = token
         best_score = 0
 
-        # Check DCS match
         if dcs_match is not None:
             match_name_dcs, score_dcs, _ = dcs_match
             if score_dcs > best_score:
@@ -163,7 +188,6 @@ def correct_dcs_and_phonetics_separately(
                         best_token = orig
                         break
 
-        # Check phonetic match
         if phon_match is not None:
             match_name_phon, score_phon, _ = phon_match
             if score_phon > best_score:
@@ -179,9 +203,7 @@ def correct_dcs_and_phonetics_separately(
 
 def replace_word_mappings(word_mappings, text):
     """
-    Replace transcribed words with custom words from their
-    mapped values. (E.g., "gulf" -> "Golf", "tawa" -> "Tower")
-    Uses case-insensitive matching on word boundaries.
+    Replace transcribed words with custom words from their mapped values.
     """
     for word, replacement in word_mappings.items():
         pattern = rf"\b{re.escape(word)}\b"
@@ -190,37 +212,15 @@ def replace_word_mappings(word_mappings, text):
 
 def custom_cleanup_text(text, word_mappings):
     """
-    1. Normalize the text.
-    2. Replace words with custom mapped values.
-    3. Remove punctuation except periods.
-    4. Remove extra spaces between digits.
-    5. Remove extra whitespace.
+    Performs several cleanup steps on the transcribed text.
     """
-    # Normalize unicode
     text = unicodedata.normalize('NFC', text.strip())
-
-    # Replace words with custom terms
     text = replace_word_mappings(word_mappings, text)
-
-    # Convert textual numbers to their numerical value.
-    # "500 thousand two hundred and ninety four" => 500294
     text = t2d.convert(text)
-
-    # Replace dashes between digits with spaces (e.g., "1-2" => "1 2")
     text = re.sub(r"(?<=\d)-(?=\d)", " ", text)
-
-    # This regex finds numbers that start with '0' and adds spaces between each digit
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
-
-    # Replace any non-word (a-z0-9_) and non-space characters from words,
-    # except periods and dashes (unless the dash has whitespace around it),
-    # with a space character. Using a space character will prevent additional
-    # whitespace from being stripped, multiple spaces are removed in the step.
     text = re.sub(r"([^\w\s.])([\s-])", " ", text)
-
-    # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
-
     return text
 
 ###############################################################################
@@ -243,23 +243,19 @@ class WhisperServer:
         # Location to the VoiceAttack executable
         self.voiceattack = None
 
-        # Load configuration settings
         self.load_configuration()
-        # Load data from the text files
         self.load_custom_word_files()
-        # Load the Whisper model
         self.load_whisper_model()
 
     def load_configuration(self):
         """
-        Loads configuration settings
+        Loads configuration settings.
         """
         if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
             try:
                 with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
                         line = line.strip()
-                        # Skip empty lines or commented lines
                         if not line or line.startswith('#'):
                             continue
 
@@ -271,8 +267,7 @@ class WhisperServer:
             except Exception as e:
                 logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
 
-        # Validate that the VoiceAttack executable can be found
-        voiceattack_location = self.config["voiceattack_location"]
+        voiceattack_location = self.config.get("voiceattack_location", "")
         if os.path.isfile(voiceattack_location):
             self.voiceattack = voiceattack_location
         else:
@@ -280,21 +275,15 @@ class WhisperServer:
 
     def load_custom_word_files(self):
         """
-        Loads:
-          - Fuzzy words (DCS callsigns, airports, etc.) from fuzzy_words.txt
-          - Word mappings (e.g., "tawa=Tower", "take-off=takeoff") from word_mappings.txt
+        Loads fuzzy words and word mappings from text files.
         """
-
-        # 1) Load word mappings
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
                 with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
                         line = line.strip()
-                        # Skip empty lines or commented lines
                         if not line or line.startswith('#'):
                             continue
-                        # Must be "source=target"
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
                             source, target = parts
@@ -305,7 +294,6 @@ class WhisperServer:
         else:
             logging.warning(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.")
 
-        # 2) Load fuzzy words
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
                 with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
@@ -319,15 +307,12 @@ class WhisperServer:
         else:
             logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
 
-    ###############################################################################
-    # WHISPER LOADING
-    ###############################################################################
     def load_whisper_model(self):
         """
-        Load the Whisper model once. Return the model object.
+        Loads the Whisper model.
         """
-        whisper_model = self.config["whisper_model"]
-        whisper_device = self.config["whisper_device"]
+        whisper_model = self.config.get("whisper_model", "base")
+        whisper_device = self.config.get("whisper_device", "CPU")
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
         if whisper_device.upper() == "GPU" and torch.cuda.is_available():
             self.model = whisper.load_model(whisper_model).to('cuda')
@@ -391,7 +376,6 @@ class WhisperServer:
     def transcribe_audio(self, audio_path):
         try:
             logging.info(f"Transcribing {audio_path}...")
-            # Less directive prompt => doesn't forcibly push phonetic expansions:
             result = self.model.transcribe(
                 audio_path,
                 language='en',
@@ -414,14 +398,10 @@ class WhisperServer:
             raw_text = result["text"]
             logging.info(f"Raw transcription result: '{raw_text}'")
 
-            # Ignore blank audio as nothing has been recorded
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
                 return
 
-            # Step 1: general cleanup
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
-
-            # Step 2: partial fuzzy match for your loaded DCS words + phonetic
             fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
                 cleaned_text,
                 self.dcs_airports,
@@ -440,34 +420,24 @@ class WhisperServer:
 
     def send_to_voiceattack(self, text):
         """
-        If text starts with the trigger phrase "note ", then:
-          1) Remove that phrase from text
-          2) Send ONLY to the kneeboard (not to VoiceAttack)
-        Otherwise, send the text to VoiceAttack as usual
+        Sends the transcribed text to VoiceAttack or copies it to the clipboard
+        if the text starts with the trigger phrase.
         """
         trigger_phrase = "note "
 
-        # Check for trigger phrase in a case-insensitive manner
         if text.lower().startswith(trigger_phrase):
-            # Strip out the phrase so it doesn't go anywhere else
             text_for_kneeboard = text[5:].strip()
-
-            # Copy the resulting text to the clipboard
             pyperclip.copy(text_for_kneeboard)
             logging.info("Text copied to clipboard for DCS kneeboard.")
-
-            # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
                 logging.info("DCS kneeboard populated")
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
-
-            # Do NOT send to VoiceAttack if "write this down" was used
             return
 
         if self.voiceattack is None:
-            logging.error(f"VoiceAttack not found so command will not be sent")
+            logging.error("VoiceAttack not found so command will not be sent")
             return
 
         try:
@@ -517,7 +487,6 @@ class WhisperServer:
 # MAIN
 ###############################################################################
 def main():
-    
     server = WhisperServer()
     server.run_server()
 
