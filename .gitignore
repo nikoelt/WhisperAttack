@@ -1,4 +1,7 @@
+__MACOSX
+
 .venv
 dist
 build
+
 whisper_server.exe

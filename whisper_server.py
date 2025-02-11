@@ -20,6 +20,12 @@ from text2digits import text2digits
 import pystray
 from PIL import Image
 
+# Set the working directory to the script's folder.
+# NOTE: this is currently commented out as this breaks when run
+# as an executable as it attempts to set this to the _internal directory,
+# which does not contain the icon, settings.cfg, and other config files
+# os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 ###############################################################################
 # CONFIG
 ###############################################################################
@@ -34,20 +40,27 @@ WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
-# Ensure the script is running with admin privileges
+###############################################################################
+# ADMIN PRIVILEGES CHECK AND RE-LAUNCH
+###############################################################################
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
+    except Exception:
         return False
 
 if not is_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, " ".join(sys.argv), None, 1
+    # Build a properly quoted command line from sys.argv
+    params = " ".join(f'"{arg}"' for arg in sys.argv)
+    ret = ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable, params, None, 1
     )
+    if ret <= 32:
+        print("Error: Failed to elevate privileges.")
+        input("Press Enter to exit...")
     sys.exit()
 
-# Use the system's temporary folder for the WAV file
+# Use the system's temporary folder for the WAV file.
 TEMP_DIR = tempfile.gettempdir()
 AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
 
@@ -82,35 +95,24 @@ def correct_dcs_and_phonetics_separately(
     phonetic_threshold=80
 ):
     """
-    Applies fuzzy matching for your loaded DCS callsigns (dcs_list)
-    and the phonetic_alphabet. Each token is compared to both lists.
-    Whichever is the best match wins.
+    Applies fuzzy matching for DCS callsigns and the phonetic alphabet.
     """
     tokens = text.split()
     corrected_tokens = []
-
     dcs_lower = [x.lower() for x in dcs_list]
     phon_lower = [x.lower() for x in phonetic_list]
 
     for token in tokens:
-        # If it's super short, skip
         if len(token) < 6:
             corrected_tokens.append(token)
             continue
 
         t_lower = token.lower()
-
-        dcs_match = process.extractOne(
-            t_lower, dcs_lower, score_cutoff=dcs_threshold
-        )
-        phon_match = process.extractOne(
-            t_lower, phon_lower, score_cutoff=phonetic_threshold
-        )
-
+        dcs_match = process.extractOne(t_lower, dcs_lower, score_cutoff=dcs_threshold)
+        phon_match = process.extractOne(t_lower, phon_lower, score_cutoff=phonetic_threshold)
         best_token = token
         best_score = 0
 
-        # Check DCS match
         if dcs_match is not None:
             match_name_dcs, score_dcs, _ = dcs_match
             if score_dcs > best_score:
@@ -120,7 +122,6 @@ def correct_dcs_and_phonetics_separately(
                         best_token = orig
                         break
 
-        # Check phonetic match
         if phon_match is not None:
             match_name_phon, score_phon, _ = phon_match
             if score_phon > best_score:
@@ -131,14 +132,11 @@ def correct_dcs_and_phonetics_separately(
                         break
 
         corrected_tokens.append(best_token)
-
     return " ".join(corrected_tokens)
 
 def replace_word_mappings(word_mappings, text):
     """
-    Replace transcribed words with custom words from their
-    mapped values. (E.g., "gulf" -> "Golf", "tawa" -> "Tower")
-    Uses case-insensitive matching on word boundaries.
+    Replace transcribed words with custom words from their mapped values.
     """
     for word, replacement in word_mappings.items():
         pattern = rf"\b{re.escape(word)}\b"
@@ -147,37 +145,15 @@ def replace_word_mappings(word_mappings, text):
 
 def custom_cleanup_text(text, word_mappings):
     """
-    1. Normalize the text.
-    2. Replace words with custom mapped values.
-    3. Remove punctuation except periods.
-    4. Remove extra spaces between digits.
-    5. Remove extra whitespace.
+    Performs several cleanup steps on the transcribed text.
     """
-    # Normalize unicode
     text = unicodedata.normalize('NFC', text.strip())
-
-    # Replace words with custom terms
     text = replace_word_mappings(word_mappings, text)
-
-    # Convert textual numbers to their numerical value.
-    # "500 thousand two hundred and ninety four" => 500294
     text = t2d.convert(text)
-
-    # Replace dashes between digits with spaces (e.g., "1-2" => "1 2")
     text = re.sub(r"(?<=\d)-(?=\d)", " ", text)
-
-    # This regex finds numbers that start with '0' and adds spaces between each digit
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
-
-    # Replace any non-word (a-z0-9_) and non-space characters from words,
-    # except periods and dashes (unless the dash has whitespace around it),
-    # with a space character. Using a space character will prevent additional
-    # whitespace from being stripped, multiple spaces are removed in the step.
     text = re.sub(r"([^\w\s.])([\s-])", " ", text)
-
-    # Remove extra spaces between words
     text = re.sub(r"\s+", " ", text).strip()
-
     return text
 
 ###############################################################################
@@ -200,26 +176,21 @@ class WhisperServer:
         # Location to the VoiceAttack executable
         self.voiceattack = None
 
-        # Load configuration settings
         self.load_configuration()
-        # Load data from the text files
         self.load_custom_word_files()
-        # Load the Whisper model
         self.load_whisper_model()
 
     def load_configuration(self):
         """
-        Loads configuration settings
+        Loads configuration settings.
         """
         if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
             try:
                 with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
                         line = line.strip()
-                        # Skip empty lines or commented lines
                         if not line or line.startswith('#'):
                             continue
-
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
                             source, target = parts
@@ -228,8 +199,7 @@ class WhisperServer:
             except Exception as e:
                 logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
 
-        # Validate that the VoiceAttack executable can be found
-        voiceattack_location = self.config["voiceattack_location"]
+        voiceattack_location = self.config.get("voiceattack_location", "")
         if os.path.isfile(voiceattack_location):
             self.voiceattack = voiceattack_location
         else:
@@ -237,21 +207,15 @@ class WhisperServer:
 
     def load_custom_word_files(self):
         """
-        Loads:
-          - Fuzzy words (DCS callsigns, airports, etc.) from fuzzy_words.txt
-          - Word mappings (e.g., "tawa=Tower", "take-off=takeoff") from word_mappings.txt
+        Loads fuzzy words and word mappings from text files.
         """
-
-        # 1) Load word mappings
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
                 with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
                         line = line.strip()
-                        # Skip empty lines or commented lines
                         if not line or line.startswith('#'):
                             continue
-                        # Must be "source=target"
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
                             source, target = parts
@@ -262,7 +226,6 @@ class WhisperServer:
         else:
             logging.warning(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.")
 
-        # 2) Load fuzzy words
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
                 with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
@@ -283,8 +246,8 @@ class WhisperServer:
         """
         Load the Whisper model once. Return the model object.
         """
-        whisper_model = self.config["whisper_model"]
-        whisper_device = self.config["whisper_device"]
+        whisper_model = self.config.get("whisper_model", "base")
+        whisper_device = self.config.get("whisper_device", "CPU")
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
         
         if whisper_device.upper() == "GPU":
@@ -301,7 +264,6 @@ class WhisperServer:
             logging.warning("Already recording—ignoring start command.")
             return
         logging.info("Starting recording...")
-
         self.wave_file = sf.SoundFile(
             self.audio_file,
             mode='w',
@@ -313,7 +275,6 @@ class WhisperServer:
             if status:
                 logging.warning(f"Audio Status: {status}")
             self.wave_file.write(indata)
-
         self.stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
@@ -334,16 +295,13 @@ class WhisperServer:
         self.wave_file.close()
         self.wave_file = None
         self.recording = False
-
         time.sleep(0.01)
-
         logging.info(f"Checking if file exists: {self.audio_file}")
         if os.path.exists(self.audio_file):
             size = os.path.getsize(self.audio_file)
             logging.info(f"File exists, size = {size} bytes")
         else:
             logging.error("File does NOT exist according to os.path.exists()!")
-
         recognized_text = self.transcribe_audio(self.audio_file)
         if recognized_text:
             self.send_to_voiceattack(recognized_text)
@@ -456,7 +414,8 @@ class WhisperServer:
             logging.warning(f"Unknown command: {cmd}")
 
     def run_server(self):
-        logging.info(f"Starting socket server on {HOST}:{PORT}...")
+        logging.info(f"Server started and listening on {HOST}:{PORT}...")
+        print(f"Server started and listening on {HOST}:{PORT}...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
@@ -482,12 +441,9 @@ class WhisperServer:
 def startup(icon):
     # Display the system tray icon
     icon.visible = True
-    try:
-        # Start the WhisperAttack server
-        server = WhisperServer()
-        server.run_server()
-    except Exception as e:
-        logging.error(f"Server failed to start: {e}")
+    # Start the WhisperAttack server
+    server = WhisperServer()
+    server.run_server()
 
 def shut_down(icon):
     logging.info("Shutting down server...")
@@ -507,17 +463,21 @@ def main():
     exit_event = threading.Event()
     global icon
 
-    try:
-        image = Image.open("whisper_attack_icon.png")
-        icon = pystray.Icon(
-            "WA", image, "WhisperAttack",
-            menu=pystray.Menu(pystray.MenuItem("Exit", shut_down))
-        )
-        # Start the system tray icon and pass it the whisper attack
-        # startup callback handler to start the server running.
-        icon.run(setup=startup)
-    except Exception as e:
-        logging.error(f"Server error: {e}")
+    image = Image.open("whisper_attack_icon.png")
+    icon = pystray.Icon(
+        "WA", image, "WhisperAttack",
+        menu=pystray.Menu(pystray.MenuItem("Exit", shut_down))
+    )
+    # Start the system tray icon and pass it the whisper attack
+    # startup callback handler to start the server running.
+    icon.run(setup=startup)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logging.error(f"Server error: {e}")
+        import traceback
+        traceback.print_exc()
+        shut_down()
+        sys.exit()
