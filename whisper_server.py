@@ -1,6 +1,10 @@
 import sys
+import os
 import subprocess
 import pkg_resources
+
+# Set the working directory to the script's folder.
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # ------------- AUTO-INSTALL MISSING DEPENDENCIES -------------
 REQUIRED_PACKAGES = [
@@ -17,7 +21,6 @@ REQUIRED_PACKAGES = [
 def install_missing_packages():
     """Check if each required package is installed; if not, install it."""
     python_exe = sys.executable
-
     installed_packages = {pkg.key for pkg in pkg_resources.working_set}
     missing = []
     for package in REQUIRED_PACKAGES:
@@ -30,7 +33,6 @@ def install_missing_packages():
                 )
             else:
                 missing.append(package)
-
     # Install any other missing packages
     if missing:
         print(f"Installing missing packages: {missing}")
@@ -44,7 +46,6 @@ def install_missing_packages():
 install_missing_packages()
 
 # Re-import modules to ensure they’re available in the current session.
-import os
 import ctypes
 import socket
 import threading
@@ -111,7 +112,9 @@ WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
-# Ensure the script is running with administrative privileges
+###############################################################################
+# ADMIN PRIVILEGES CHECK AND RE-LAUNCH
+###############################################################################
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -119,18 +122,22 @@ def is_admin():
         return False
 
 if not is_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, " ".join(sys.argv), None, 1
+    # Build a properly quoted command line from sys.argv
+    params = " ".join(f'"{arg}"' for arg in sys.argv)
+    ret = ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable, params, None, 1
     )
+    if ret <= 32:
+        print("Error: Failed to elevate privileges.")
+        input("Press Enter to exit...")
     sys.exit()
 
 # With admin rights confirmed, ensure FFmpeg is installed.
 ensure_ffmpeg_installed()
 
-# Use the system's temporary folder for the WAV file
+# Use the system's temporary folder for the WAV file.
 TEMP_DIR = tempfile.gettempdir()
 AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
-
 SAMPLE_RATE = 16000
 
 ###############################################################################
@@ -158,7 +165,6 @@ def correct_dcs_and_phonetics_separately(
     """
     tokens = text.split()
     corrected_tokens = []
-
     dcs_lower = [x.lower() for x in dcs_list]
     phon_lower = [x.lower() for x in phonetic_list]
 
@@ -168,14 +174,8 @@ def correct_dcs_and_phonetics_separately(
             continue
 
         t_lower = token.lower()
-
-        dcs_match = process.extractOne(
-            t_lower, dcs_lower, score_cutoff=dcs_threshold
-        )
-        phon_match = process.extractOne(
-            t_lower, phon_lower, score_cutoff=phonetic_threshold
-        )
-
+        dcs_match = process.extractOne(t_lower, dcs_lower, score_cutoff=dcs_threshold)
+        phon_match = process.extractOne(t_lower, phon_lower, score_cutoff=phonetic_threshold)
         best_token = token
         best_score = 0
 
@@ -198,7 +198,6 @@ def correct_dcs_and_phonetics_separately(
                         break
 
         corrected_tokens.append(best_token)
-
     return " ".join(corrected_tokens)
 
 def replace_word_mappings(word_mappings, text):
@@ -258,7 +257,6 @@ class WhisperServer:
                         line = line.strip()
                         if not line or line.startswith('#'):
                             continue
-
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
                             source, target = parts
@@ -324,7 +322,6 @@ class WhisperServer:
             logging.warning("Already recording—ignoring start command.")
             return
         logging.info("Starting recording...")
-
         self.wave_file = sf.SoundFile(
             self.audio_file,
             mode='w',
@@ -336,7 +333,6 @@ class WhisperServer:
             if status:
                 logging.warning(f"Audio Status: {status}")
             self.wave_file.write(indata)
-
         self.stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
@@ -357,16 +353,13 @@ class WhisperServer:
         self.wave_file.close()
         self.wave_file = None
         self.recording = False
-
         time.sleep(0.01)
-
         logging.info(f"Checking if file exists: {self.audio_file}")
         if os.path.exists(self.audio_file):
             size = os.path.getsize(self.audio_file)
             logging.info(f"File exists, size = {size} bytes")
         else:
             logging.error("File does NOT exist according to os.path.exists()!")
-
         recognized_text = self.transcribe_audio(self.audio_file)
         if recognized_text:
             self.send_to_voiceattack(recognized_text)
@@ -397,10 +390,8 @@ class WhisperServer:
             )
             raw_text = result["text"]
             logging.info(f"Raw transcription result: '{raw_text}'")
-
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
                 return
-
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
             fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
                 cleaned_text,
@@ -409,11 +400,9 @@ class WhisperServer:
                 dcs_threshold=85,
                 phonetic_threshold=80
             )
-
             logging.info(f"Cleaned transcription: {cleaned_text}")
             logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
             return fuzzy_corrected_text
-
         except Exception as e:
             logging.error(f"Failed to transcribe audio: {e}")
             return ""
@@ -424,7 +413,6 @@ class WhisperServer:
         if the text starts with the trigger phrase.
         """
         trigger_phrase = "note "
-
         if text.lower().startswith(trigger_phrase):
             text_for_kneeboard = text[5:].strip()
             pyperclip.copy(text_for_kneeboard)
@@ -435,11 +423,9 @@ class WhisperServer:
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
             return
-
         if self.voiceattack is None:
             logging.error("VoiceAttack not found so command will not be sent")
             return
-
         try:
             logging.info(f"Sending recognized text to VoiceAttack: {text}")
             subprocess.call([self.voiceattack, '-command', text])
@@ -465,7 +451,6 @@ class WhisperServer:
             s.bind((HOST, PORT))
             s.listen()
             s.settimeout(1.0)
-
             while not self.stop_event.is_set():
                 try:
                     conn, addr = s.accept()
@@ -478,7 +463,6 @@ class WhisperServer:
                 except Exception as e:
                     logging.error(f"Socket error: {e}")
                     continue
-
         if self.recording:
             self.stop_and_transcribe()
         logging.info("Server has shut down cleanly.")
@@ -491,4 +475,11 @@ def main():
     server.run_server()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        input("An unhandled exception occurred. Press Enter to exit...")
+    else:
+        input("Press Enter to exit...")
