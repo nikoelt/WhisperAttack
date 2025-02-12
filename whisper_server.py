@@ -447,12 +447,12 @@ def startup(icon):
 
 def shut_down(icon):
     logging.info("Shutting down server...")
+    print("Shutting down server...")
     # Stop the whisper server
     exit_event.set()
-    # Hide the system tray icon
     icon.visible = False
-    # Stop the system tray icon
     icon.stop()
+    sys.exit()
 
 ###############################################################################
 # MAIN
@@ -479,5 +479,4 @@ if __name__ == "__main__":
         logging.error(f"Server error: {e}")
         import traceback
         traceback.print_exc()
-        shut_down()
-        sys.exit()
+        shut_down(icon)
