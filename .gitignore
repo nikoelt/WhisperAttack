@@ -1,4 +1,5 @@
 __MACOSX
+.DS_Store
 
 .venv
 dist

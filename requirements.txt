@@ -1,6 +1,5 @@
 keyboard
 faster_whisper
-tensorboard
 pyperclip
 rapidfuzz
 sounddevice
