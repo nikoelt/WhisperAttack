@@ -1,11 +1,10 @@
-gulf=Golf
-gold=Golf
+gulf;gold=Golf
 atel=Hotel
 leema=Lima
 mic=Mike
 Cubac=Quebec
-wosky=Whiskey
-weske=Whiskey
+wosky;weske=Whiskey
 tawa=Tower
 inter=Enter
 take-off=takeoff
+pre-contact=precontact
