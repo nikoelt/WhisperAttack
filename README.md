@@ -97,6 +97,8 @@ NOTE: Make sure to wait for the Whisper Model to download. This process only nee
 
 ## Configuration
 
+### settings.cfg
+
 The `settings.cfg` file contains configuration for WhisperAttack.
 
 The default values should cover most cases but can be changed:
@@ -105,7 +107,18 @@ The default values should cover most cases but can be changed:
   - By default this is `small` but can be updated to `small.en` if not requiring multiligual support
   - A smaller size can be specified for reducing the amount of VRAM used
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
-- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location. 
+- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location.
+
+### word_mappings.txt
+
+The `word_mappings.txt` file contains keys and values that can be used to replace a spoken word with another word. For example, if the transcription often outputs "Inter" when you are saying "Enter" then this can be added as a word placement.
+
+The word replacement configuration also supports specifying multiple words to be replaced with a single word, these are separated by a semicolon `;`. In the example below saying either "gulf" or "gold" would be replaced with "Golf".
+
+```
+gulf;gold=Golf
+inter=Inter
+```
 
 ---
 

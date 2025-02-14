@@ -284,8 +284,9 @@ class WhisperServer:
                             continue
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
-                            source, target = parts
-                            self.word_mappings[source.strip()] = target.strip()
+                            aliases, target = parts
+                            target = target.strip()
+                            list(map(lambda alias: self.word_mappings.update({ alias: target }), aliases.split(';')))
                 logging.info(f"Loaded word mappings: {self.word_mappings}")
             except Exception as e:
                 logging.error(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}")
