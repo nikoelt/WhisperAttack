@@ -310,7 +310,7 @@ class WhisperServer:
         """
         Loads the Whisper model.
         """
-        whisper_model = self.config.get("whisper_model", "base")
+        whisper_model = self.config.get("whisper_model", "small.en")
         whisper_device = self.config.get("whisper_device", "CPU")
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
         if whisper_device.upper() == "GPU" and torch.cuda.is_available():

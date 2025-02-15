@@ -83,7 +83,7 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 - You’ll see logs like:
 
 ```
-2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
+2025-01-04 12:00:00 - INFO - Loading Whisper model (small.en), device=GPU
 2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
 ```
 
@@ -103,9 +103,8 @@ The `settings.cfg` file contains configuration for WhisperAttack.
 
 The default values should cover most cases but can be changed:
 
-- `whisper_model` - The Whisper model to use, `small` by default. See the table at the bottom of the README file for options.
-  - By default this is `small` but can be updated to `small.en` if not requiring multiligual support
-  - A smaller size can be specified for reducing the amount of VRAM used
+- `whisper_model` - The Whisper model to use, `small.en` by default. See the table at the bottom of the README file for options.
+  - A smaller size can be specified for reducing the amount of VRAM used, e.g. `base.en` or `tiny.en`
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
 - `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location.
 
@@ -243,7 +242,7 @@ Everything else stays the same. Whisper will then start adding punctuation symbo
 If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by changing the model size (extra information on the models is available in the table below) in the `settings.cfg` file as follows:
 
 ```console
-whisper_model=small
+whisper_model=base.en
 ```
 
 - Using smaller models will reduce VRAM and compute costs. See below for a full speed breakdown
