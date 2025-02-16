@@ -19,6 +19,8 @@ from rapidfuzz import process
 from text2digits import text2digits
 import pystray
 from PIL import Image
+import tkinter as tk
+from tkinter import scrolledtext
 
 # Set the working directory to the script's folder.
 # NOTE: this is currently commented out as this breaks when run
@@ -438,10 +440,18 @@ class WhisperServer:
             self.stop_and_transcribe()
         logging.info("Server has shut down cleanly.")
 
+class WhisperAttack:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("WhisperAttack")
+        self.text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=40, height=10)
+        self.text_area.pack(padx=10, pady=10)
+        self.entry = tk.Entry(root, width=40)
+        self.entry.pack(padx=10, pady=5)
+
 def startup(icon):
-    # Display the system tray icon
-    icon.visible = True
     # Start the WhisperAttack server
+    icon.visible = True
     server = WhisperServer()
     server.run_server()
 
@@ -452,25 +462,36 @@ def shut_down(icon):
     exit_event.set()
     icon.visible = False
     icon.stop()
-    sys.exit()
+    window.destroy()
+
+def show_window(icon, item):
+    window.after(0, window.deiconify)
+
+def withdraw_window():
+    window.withdraw()
+
+# This event is used to stop the loop.
+exit_event = threading.Event()
+# The WhisperAttack window
+window = tk.Tk()
+window.protocol('WM_DELETE_WINDOW', withdraw_window)
+# The Whisper system tray icon
+image = Image.open("whisper_attack_icon.png")
+icon = pystray.Icon(
+    "WA", image, "WhisperAttack",
+    menu=pystray.Menu(pystray.MenuItem("Exit", shut_down), pystray.MenuItem("Show", show_window))
+)
 
 ###############################################################################
 # MAIN
 ###############################################################################
 def main():
-     # This event is used to stop the loop.
-    global exit_event
-    exit_event = threading.Event()
-    global icon
-
-    image = Image.open("whisper_attack_icon.png")
-    icon = pystray.Icon(
-        "WA", image, "WhisperAttack",
-        menu=pystray.Menu(pystray.MenuItem("Exit", shut_down))
-    )
-    # Start the system tray icon and pass it the whisper attack
-    # startup callback handler to start the server running.
-    icon.run(setup=startup)
+    # Create the system tray icon and start the WhisperAttack server running
+    # in the background
+    threading.Thread(daemon=True, target=lambda: icon.run(setup=startup)).start()
+    # Start the WhisperAttack output window
+    WhisperAttack(window)
+    window.mainloop()
 
 if __name__ == "__main__":
     try:
