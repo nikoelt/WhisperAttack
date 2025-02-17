@@ -71,13 +71,16 @@ AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
 
 SAMPLE_RATE = 16000
 
-# Logging
 LOCAL_APPDATA_DIR = os.getenv('LOCALAPPDATA')
 WHISPER_APPDATA_DIR = os.path.join(LOCAL_APPDATA_DIR , "WhisperAttack")
 # Create the AppData directory for WhisterAttack if it does not already exist
 os.makedirs(WHISPER_APPDATA_DIR, exist_ok=True)
-LOG_FILE = os.path.join(WHISPER_APPDATA_DIR, "WhisperAttack.log")
-logging.basicConfig(filename=LOG_FILE, filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Lock file to create to prevent multiple instances being run
+LOCK_FILE = os.path.join(WHISPER_APPDATA_DIR, 'whisper_attack.lock')
+
+def start_logging():
+    log_file = os.path.join(WHISPER_APPDATA_DIR, "WhisperAttack.log")
+    logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 ###############################################################################
 # PHONETIC ALPHABET
@@ -505,6 +508,11 @@ class WhisperAttackWriter:
 def shut_down(icon):
     logging.info("Shutting down server...")
     exit_event.set()
+    try:
+        os.remove(LOCK_FILE)
+    except Exception:
+        # Ignore as file has already been removed
+        pass
     icon.visible = False
     icon.stop()
     window.destroy()
@@ -529,11 +537,18 @@ icon = Icon(
 # MAIN
 ###############################################################################
 def main():
-    # Start the WhisperAttack application
+    start_logging()
     WhisperAttack(window)
     window.mainloop()
 
 if __name__ == "__main__":
+    # Create a lock file when the application starts, exit if one
+    # already exists as this implies the application is already running
+    if os.path.exists(LOCK_FILE):
+        sys.exit(0)
+    else:
+        open(LOCK_FILE, 'w').close()
+
     try:
         main()
     except Exception as e:
