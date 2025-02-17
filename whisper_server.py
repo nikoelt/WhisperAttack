@@ -21,6 +21,7 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 import tkinter as tk
 from tkinter import scrolledtext
+from pid import PidFile, PidFileError
 
 # Set the working directory to the script's folder.
 # NOTE: this is currently commented out as this breaks when run
@@ -76,7 +77,7 @@ WHISPER_APPDATA_DIR = os.path.join(LOCAL_APPDATA_DIR , "WhisperAttack")
 # Create the AppData directory for WhisterAttack if it does not already exist
 os.makedirs(WHISPER_APPDATA_DIR, exist_ok=True)
 # Lock file to create to prevent multiple instances being run
-LOCK_FILE = os.path.join(WHISPER_APPDATA_DIR, 'whisper_attack.lock')
+LOCK_FILE = os.path.join(WHISPER_APPDATA_DIR, 'whisper_attack')
 
 def start_logging():
     log_file = os.path.join(WHISPER_APPDATA_DIR, "WhisperAttack.log")
@@ -445,7 +446,7 @@ class WhisperServer:
 
     def run_server(self):
         logging.info(f"Server started and listening on {HOST}:{PORT}...")
-        self.writer.write(f"Server started and listening on {HOST}:{PORT}...", TAG_BLACK)
+        self.writer.write(f"Server started and listening on {HOST}:{PORT}...", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
@@ -473,11 +474,11 @@ class WhisperServer:
 
 class WhisperAttack:
     def __init__(self, root):
+        start_logging()
         self.root = root
         self.root.title("WhisperAttack")
         text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=50)
         self.writer = WhisperAttackWriter(text_area)
-
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
     def startup(self, icon):
@@ -508,11 +509,6 @@ class WhisperAttackWriter:
 def shut_down(icon):
     logging.info("Shutting down server...")
     exit_event.set()
-    try:
-        os.remove(LOCK_FILE)
-    except Exception:
-        # Ignore as file has already been removed
-        pass
     icon.visible = False
     icon.stop()
     window.destroy()
@@ -537,20 +533,17 @@ icon = Icon(
 # MAIN
 ###############################################################################
 def main():
-    start_logging()
-    WhisperAttack(window)
-    window.mainloop()
+    with PidFile(LOCK_FILE):
+        WhisperAttack(window)
+        window.mainloop()
 
 if __name__ == "__main__":
-    # Create a lock file when the application starts, exit if one
-    # already exists as this implies the application is already running
-    if os.path.exists(LOCK_FILE):
-        sys.exit(0)
-    else:
-        open(LOCK_FILE, 'w').close()
-
     try:
         main()
+    except PidFileError as pid_error:
+        # Ignore as means possibly another instance of application
+        # is already running, this second attempt will be killed.
+        pass
     except Exception as e:
         logging.error(f"Server error: {e}")
         import traceback
