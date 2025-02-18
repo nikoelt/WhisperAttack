@@ -360,7 +360,7 @@ class WhisperServer:
                 raw_text += f"{segment.text}"
 
             logging.info(f"Raw transcription result: '{raw_text}'")
-            self.writer.write(f"Raw transcription result: '{raw_text}'", TAG_BLUE)
+            self.writer.write(f"Raw transcribed text: '{raw_text}'", TAG_BLUE)
 
             # Ignore blank audio as nothing has been recorded
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
@@ -408,6 +408,7 @@ class WhisperServer:
             # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
+                self.writer.write(f"Sent text to DCS kneeboard: {text}", TAG_GREEN)
                 logging.info("DCS kneeboard populated")
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
@@ -423,8 +424,8 @@ class WhisperServer:
 
         try:
             logging.info(f"Sending recognized text to VoiceAttack: {text}")
-            self.writer.write(f"Sending recognized text to VoiceAttack: {text}", TAG_GREEN)
             subprocess.call([self.voiceattack, '-command', text])
+            self.writer.write(f"Sent text to VoiceAttack: {text}", TAG_GREEN)
         except Exception as e:
             logging.error(f"Error calling VoiceAttack: {e}")
             self.writer.write(f"Error calling VoiceAttack: {e}", TAG_RED)
