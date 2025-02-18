@@ -161,7 +161,7 @@ def custom_cleanup_text(text, word_mappings):
     text = t2d.convert(text)
     text = re.sub(r"(?<=\d)-(?=\d)", " ", text)
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
-    text = re.sub(r"([^\w\s.])([\s-])", " ", text)
+    text = re.sub(r"([^\w\s])*(?:[^\w\-\w])", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
