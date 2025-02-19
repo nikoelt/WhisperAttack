@@ -478,7 +478,7 @@ class WhisperAttack:
         start_logging()
         self.root = root
         self.root.title("WhisperAttack")
-        text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=50)
+        text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=50, state="disabled")
         self.writer = WhisperAttackWriter(text_area)
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
@@ -487,7 +487,7 @@ class WhisperAttack:
         server = WhisperServer(self.writer)
         server.run_server()
 
-TAG_BLACK= 'black'
+TAG_BLACK = 'black'
 TAG_BLUE = 'blue'
 TAG_GREEN = 'green'
 TAG_GREY = 'grey'
@@ -504,8 +504,11 @@ class WhisperAttackWriter:
         self.text_area.tag_configure(TAG_RED, foreground=TAG_RED)
         
     def write(self, text, tag):
+        self.text_area.config(state="normal")
         self.text_area.insert(tk.END, text + "\n", tag)
         self.text_area.see(tk.END)
+        self.text_area.config(state="disabled")
+
 
 def shut_down(icon):
     logging.info("Shutting down server...")
