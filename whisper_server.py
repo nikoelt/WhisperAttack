@@ -20,7 +20,7 @@ from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 
 # Set the working directory to the script's folder.
@@ -408,7 +408,7 @@ class WhisperServer:
             # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
-                self.writer.write(f"Sent text to DCS kneeboard: {text}", TAG_GREEN)
+                self.writer.write(f"Sent text to DCS: {text_for_kneeboard}", TAG_GREEN)
                 logging.info("DCS kneeboard populated")
             except Exception as e:
                 logging.error(f"Failed to simulate keyboard shortcut: {e}")
@@ -478,7 +478,7 @@ class WhisperAttack:
         start_logging()
         self.root = root
         self.root.title("WhisperAttack")
-        text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=50, state="disabled")
+        text_area = scrolledtext.ScrolledText(root, wrap=WORD, width=100, height=50, state=DISABLED)
         self.writer = WhisperAttackWriter(text_area)
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
@@ -504,11 +504,10 @@ class WhisperAttackWriter:
         self.text_area.tag_configure(TAG_RED, foreground=TAG_RED)
         
     def write(self, text, tag):
-        self.text_area.config(state="normal")
-        self.text_area.insert(tk.END, text + "\n", tag)
-        self.text_area.see(tk.END)
-        self.text_area.config(state="disabled")
-
+        self.text_area.config(state=NORMAL)
+        self.text_area.insert(END, text + "\n", tag)
+        self.text_area.see(END)
+        self.text_area.config(state=DISABLED)
 
 def shut_down(icon):
     logging.info("Shutting down server...")
@@ -522,6 +521,18 @@ def show_window(icon, item):
 
 def withdraw_window():
     window.withdraw()
+
+def open_modal(message):
+    modal = Toplevel(window)
+    modal.title("WhisperAttack")
+    modal.geometry("800x300")
+    label = Label(modal, text=message)
+    label.pack(pady=20)
+    close_button = Button(modal, text="Close", command=modal.destroy)
+    close_button.pack(pady=10)
+    modal.transient(window)
+    modal.grab_set()
+    window.wait_window(modal)
 
 # The WhisperAttack window
 window = tk.Tk()
@@ -547,9 +558,11 @@ if __name__ == "__main__":
     except PidFileError as pid_error:
         # Ignore as means possibly another instance of application
         # is already running, this second attempt will be killed.
+        open_modal("WhisperAttack is already running")
         pass
     except Exception as e:
-        logging.error(f"Server error: {e}")
         import traceback
-        traceback.print_exc()
+        trace = traceback.format_exc()
+        logging.error(f"Server error: {e}\n\n{trace}")
+        open_modal(f"Unexpected server error: {e}\n\n{trace}")
         shut_down(icon)
