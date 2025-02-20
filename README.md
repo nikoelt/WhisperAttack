@@ -72,7 +72,9 @@ The default values should cover most cases but can be changed:
 
 ## Running the Whisper Server
 
-Double click the `WhisperAttack.exe` file or shortcut. This will open a terminal window and start the server.
+Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server. This may take a few seconds for the initial loading.
+
+The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray.
 
 The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
 
@@ -81,7 +83,9 @@ The Whisper server will output logs to the `C:\Users\username\AppData\Local\Whis
 2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
 ```
 
-Leave the terminal window open. The server must keep running to handle start/stop commands.
+A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhipserAttack window, or to exit the application.
+
+Closing VoiceAttack will also stop and close WhisperAttack.
 
 **NOTE:** Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
 

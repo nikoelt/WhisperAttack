@@ -81,15 +81,15 @@ Copy the following files into the `dist\whisper_server` directory as these must 
 - fuzzy_words.txt
 - whisper_attack_icon.png
 
-The `whisper_server` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice.
+The `whisper_server` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice. Rename `whisper_server.exe` to `WhisperAttack.exe`.
 
 The contents of the `whisper_server` folder can be zipped up if needing to distribute.
 
 ### Running the application
 
-Double-click the `whisper_server.exe` file to run it. It may take a little while the first time it runs as it downloads the Whisper model.
+Double-click the `WhisperAttack.exe` file to run it. It may take a little while the first time it runs, especially if it is downloading the Whisper model if it was not already installed.
 
-Check the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file. You may need to close and reopen the log file if your editor does not automatically update when lines are added to the file.
+An application window will be opened when it has started up and display logging information information. Full information is also logged to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file. You may need to close and reopen the log file if your editor does not automatically update when lines are added to the file.
 
 The application can be exited using either by right-clicking the WhisperAttack icon in the system tray, or by closing VoiceAttack.
 
@@ -100,3 +100,5 @@ Once you are happy with the executable and do not need to rebuild with any furth
 ```console
 .\.venv\Scripts\deactivate.bat
 ```
+
+Delete the `.venv`, `build`, and `dist` directories.
