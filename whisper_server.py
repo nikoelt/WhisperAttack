@@ -240,7 +240,7 @@ class WhisperServer:
                 self.writer.write(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
         else:
             logging.warning(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.")
-            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_RED)
+            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
@@ -255,7 +255,7 @@ class WhisperServer:
                 self.writer.write(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}", TAG_RED)
         else:
             logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
-            self.writer.write(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.", TAG_RED)
+            self.writer.write(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.", TAG_ORANGE)
 
     ###############################################################################
     # WHISPER LOADING
@@ -282,6 +282,7 @@ class WhisperServer:
     def start_recording(self):
         if self.recording:
             logging.info("Already recording—ignoring start command.")
+            self.writer.write("Already recording—ignoring start command", TAG_ORANGE)
             return
         logging.info("Starting recording...")
         self.writer.write("Starting recording...", TAG_GREY)
@@ -308,6 +309,7 @@ class WhisperServer:
     def stop_and_transcribe(self):
         if not self.recording:
             logging.warning("Not currently recording—ignoring stop command.")
+            self.writer.write("Not currently recording—ignoring stop command", TAG_ORANGE)
             return
         logging.info("Stopping recording...")
         self.writer.write("Stopped recording", TAG_GREY)
@@ -443,7 +445,7 @@ class WhisperServer:
             shut_down(icon)
         else:
             logging.warning(f"Unknown command: {cmd}")
-            self.writer.write(f"Unknown command: {cmd}", TAG_RED)
+            self.writer.write(f"Unknown command: {cmd}", TAG_ORANGE)
 
     def run_server(self):
         logging.info(f"Server started and listening on {HOST}:{PORT}...")
@@ -491,6 +493,7 @@ TAG_BLACK = 'black'
 TAG_BLUE = 'blue'
 TAG_GREEN = 'green'
 TAG_GREY = 'grey'
+TAG_ORANGE = 'orange'
 TAG_RED = 'red'
 
 class WhisperAttackWriter:
@@ -501,6 +504,7 @@ class WhisperAttackWriter:
         self.text_area.tag_configure(TAG_BLUE, foreground=TAG_BLUE)
         self.text_area.tag_configure(TAG_GREEN, foreground=TAG_GREEN)
         self.text_area.tag_configure(TAG_GREY, foreground=TAG_GREY)
+        self.text_area.tag_configure(TAG_ORANGE, foreground=TAG_ORANGE)
         self.text_area.tag_configure(TAG_RED, foreground=TAG_RED)
         
     def write(self, text, tag):
