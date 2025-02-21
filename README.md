@@ -59,6 +59,8 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 
 ## Configuration
 
+### settings.cfg
+
 The `settings.cfg` file contains configuration for WhisperAttack.
 
 The default values should cover most cases but can be changed:
@@ -66,7 +68,18 @@ The default values should cover most cases but can be changed:
 - `whisper_model` - The Whisper model to use, `small.en` by default. See the table at the bottom of the README file for options.
   - A smaller size can be specified for reducing the amount of VRAM used, e.g. `base.en` or `tiny.en`
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
-- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location. 
+- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location.
+
+### word_mappings.txt
+
+The `word_mappings.txt` file contains keys and values that can be used to replace a spoken word with another word. For example, if the transcription often outputs "Inter" when you are saying "Enter" then this can be added as a word placement.
+
+The word replacement configuration also supports specifying multiple words to be replaced with a single word, these are separated by a semicolon `;`. In the example below saying either "gulf" or "gold" would be replaced with "Golf".
+
+```
+gulf;gold=Golf
+inter=Inter
+```
 
 ---
 

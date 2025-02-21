@@ -69,7 +69,6 @@ if not is_admin():
 # Use the system's temporary folder for the WAV file.
 TEMP_DIR = tempfile.gettempdir()
 AUDIO_FILE = os.path.join(TEMP_DIR, "whisper_temp_recording.wav")
-
 SAMPLE_RATE = 16000
 
 LOCAL_APPDATA_DIR = os.getenv('LOCALAPPDATA')
@@ -231,8 +230,9 @@ class WhisperServer:
                             continue
                         parts = line.split('=', maxsplit=1)
                         if len(parts) == 2:
-                            source, target = parts
-                            self.word_mappings[source.strip()] = target.strip()
+                            aliases, target = parts
+                            target = target.strip()
+                            list(map(lambda alias: self.word_mappings.update({ alias: target }), aliases.split(';')))
                 logging.info(f"Loaded word mappings: {self.word_mappings}")
                 self.writer.write(f"Loaded word mappings: {self.word_mappings}", TAG_BLACK)
             except Exception as e:
@@ -257,14 +257,11 @@ class WhisperServer:
             logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
             self.writer.write(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.", TAG_ORANGE)
 
-    ###############################################################################
-    # WHISPER LOADING
-    ###############################################################################
     def load_whisper_model(self):
         """
-        Load the Whisper model once. Return the model object.
+        Loads the Whisper model.
         """
-        whisper_model = self.config.get("whisper_model", "base")
+        whisper_model = self.config.get("whisper_model", "small.en")
         whisper_device = self.config.get("whisper_device", "CPU")
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
         self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device}", TAG_BLACK)
@@ -332,6 +329,7 @@ class WhisperServer:
             self.send_to_voiceattack(recognized_text)
         else:
             logging.info("No transcription result.")
+            self.writer.write("No transcription result", TAG_GREY)
 
     def transcribe_audio(self, audio_path):
         try:
@@ -363,15 +361,10 @@ class WhisperServer:
 
             logging.info(f"Raw transcription result: '{raw_text}'")
             self.writer.write(f"Raw transcribed text: '{raw_text}'", TAG_BLUE)
-
             # Ignore blank audio as nothing has been recorded
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
                 return
-
-            # Step 1: general cleanup
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
-
-            # Step 2: partial fuzzy match for your loaded DCS words + phonetic
             fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
                 cleaned_text,
                 self.dcs_airports,
@@ -379,11 +372,9 @@ class WhisperServer:
                 dcs_threshold=85,
                 phonetic_threshold=80
             )
-
             logging.info(f"Cleaned transcription: {cleaned_text}")
             logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
             return fuzzy_corrected_text
-
         except Exception as e:
             logging.error(f"Failed to transcribe audio: {e}")
             self.writer.write(f"Failed to transcribe audio: {e}", TAG_RED)
@@ -391,23 +382,14 @@ class WhisperServer:
 
     def send_to_voiceattack(self, text):
         """
-        If text starts with the trigger phrase "note ", then:
-          1) Remove that phrase from text
-          2) Send ONLY to the kneeboard (not to VoiceAttack)
-        Otherwise, send the text to VoiceAttack as usual
+        Sends the transcribed text to VoiceAttack or copies it to the clipboard
+        if the text starts with the trigger phrase.
         """
         trigger_phrase = "note "
-
-        # Check for trigger phrase in a case-insensitive manner
         if text.lower().startswith(trigger_phrase):
-            # Strip out the phrase so it doesn't go anywhere else
             text_for_kneeboard = text[5:].strip()
-
-            # Copy the resulting text to the clipboard
             pyperclip.copy(text_for_kneeboard)
             logging.info("Text copied to clipboard for DCS kneeboard.")
-
-            # Simulate kneeboard hotkeys
             try:
                 keyboard.press_and_release('ctrl+alt+p')
                 self.writer.write(f"Sent text to DCS: {text_for_kneeboard}", TAG_GREEN)
@@ -418,12 +400,10 @@ class WhisperServer:
 
             # Do NOT send to VoiceAttack if trigger word "note " was used
             return
-
         if self.voiceattack is None:
-            logging.warning(f"VoiceAttack not found so command will not be sent")
+            logging.error(f"VoiceAttack not found so command will not be sent")
             self.writer.write(f"VoiceAttack not found so command will not be sent", TAG_RED)
             return
-
         try:
             logging.info(f"Sending recognized text to VoiceAttack: {text}")
             subprocess.call([self.voiceattack, '-command', text])
@@ -440,8 +420,8 @@ class WhisperServer:
         elif cmd == "stop":
             self.stop_and_transcribe()
         elif cmd == "shutdown":
-            logging.info("Received shutdown command. Stopping server.")
-            self.writer.write("Received shutdown command. Stopping server.", TAG_BLACK)
+            logging.info("Received shutdown command. Stopping server...")
+            self.writer.write("Received shutdown command. Stopping server...", TAG_BLACK)
             shut_down(icon)
         else:
             logging.warning(f"Unknown command: {cmd}")
@@ -468,7 +448,6 @@ class WhisperServer:
                     logging.error(f"Socket error: {e}")
                     self.writer.write(f"Socket error: {e}", TAG_RED)
                     continue
-
         if self.recording:
             self.stop_and_transcribe()
 
