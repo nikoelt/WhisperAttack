@@ -1,4 +1,5 @@
 keyboard
+transformers
 faster_whisper
 pyperclip
 rapidfuzz
