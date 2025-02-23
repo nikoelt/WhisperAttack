@@ -19,8 +19,7 @@ from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
-import tkinter as tk
-from tkinter import scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, font, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 
 # Set the working directory to the script's folder.
@@ -205,7 +204,8 @@ class WhisperServer:
                             source, target = parts
                             self.config[source.strip()] = target.strip()
                 logging.info(f"Loaded configuration: {self.config}")
-                self.writer.write(f"Loaded configuration: {self.config}", TAG_BLACK)
+                self.writer.write("Loaded configuration:", TAG_BLUE)
+                self.writer.write_dict(self.config, TAG_GREY)
             except Exception as e:
                 logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
                 self.writer.write(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}", TAG_RED)
@@ -234,7 +234,8 @@ class WhisperServer:
                             target = target.strip()
                             list(map(lambda alias: self.word_mappings.update({ alias: target }), aliases.split(';')))
                 logging.info(f"Loaded word mappings: {self.word_mappings}")
-                self.writer.write(f"Loaded word mappings: {self.word_mappings}", TAG_BLACK)
+                self.writer.write("Loaded word mappings:", TAG_BLUE)
+                self.writer.write_dict(self.word_mappings, TAG_GREY)
             except Exception as e:
                 logging.error(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}")
                 self.writer.write(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
@@ -249,7 +250,8 @@ class WhisperServer:
                         line.strip() for line in f
                         if line.strip() and not line.strip().startswith('#')
                     ]
-                self.writer.write(f"Loaded fuzzy words: {self.dcs_airports}", TAG_BLACK)
+                self.writer.write("Loaded fuzzy words:", TAG_BLUE)
+                self.writer.write(f"{self.dcs_airports}", TAG_GREY)
             except Exception as e:
                 logging.error(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}")
                 self.writer.write(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}", TAG_RED)
@@ -264,7 +266,7 @@ class WhisperServer:
         whisper_model = self.config.get("whisper_model", "small.en")
         whisper_device = self.config.get("whisper_device", "CPU")
         logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
-        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device}", TAG_BLACK)
+        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
         
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
@@ -421,7 +423,7 @@ class WhisperServer:
             self.stop_and_transcribe()
         elif cmd == "shutdown":
             logging.info("Received shutdown command. Stopping server...")
-            self.writer.write("Received shutdown command. Stopping server...", TAG_BLACK)
+            self.writer.write("Received shutdown command. Stopping server...")
             shut_down(icon)
         else:
             logging.warning(f"Unknown command: {cmd}")
@@ -452,14 +454,14 @@ class WhisperServer:
             self.stop_and_transcribe()
 
         logging.info("Server has shut down cleanly.")
-        self.writer.write("Server has shut down cleanly.", TAG_BLACK)
+        self.writer.write("Server has shut down cleanly.")
 
 class WhisperAttack:
     def __init__(self, root):
         start_logging()
         self.root = root
         self.root.title("WhisperAttack")
-        text_area = scrolledtext.ScrolledText(root, wrap=WORD, width=100, height=50, state=DISABLED)
+        text_area = scrolledtext.ScrolledText(self.root, wrap=WORD, width=100, height=50, state=DISABLED)
         self.writer = WhisperAttackWriter(text_area)
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
@@ -486,11 +488,15 @@ class WhisperAttackWriter:
         self.text_area.tag_configure(TAG_ORANGE, foreground=TAG_ORANGE)
         self.text_area.tag_configure(TAG_RED, foreground=TAG_RED)
         
-    def write(self, text, tag):
+    def write(self, text, tag = TAG_BLACK):
         self.text_area.config(state=NORMAL)
         self.text_area.insert(END, text + "\n", tag)
         self.text_area.see(END)
         self.text_area.config(state=DISABLED)
+
+    def write_dict(self, dict, tag = TAG_BLACK):
+        for key, value in dict.items():
+            self.write(f"{key}: {value}", tag)
 
 def shut_down(icon):
     logging.info("Shutting down server...")
@@ -518,8 +524,9 @@ def open_modal(message):
     window.wait_window(modal)
 
 # The WhisperAttack window
-window = tk.Tk()
+window = Tk()
 window.protocol('WM_DELETE_WINDOW', withdraw_window)
+
 # The Whisper system tray icon
 image = Image.open("whisper_attack_icon.png")
 icon = Icon(
