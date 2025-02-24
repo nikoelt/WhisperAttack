@@ -456,12 +456,46 @@ class WhisperServer:
         logging.info("Server has shut down cleanly.")
         self.writer.write("Server has shut down cleanly.")
 
+TAG_BLACK = 'black'
+TAG_BLUE = 'blue'
+TAG_GREEN = 'green'
+TAG_GREY = 'grey'
+TAG_ORANGE = 'orange'
+TAG_RED = 'red'
+
+THEME_DARK = 'dark'
+THEME_LIGHT = 'light'
+
+theme = THEME_LIGHT
+theme_config = {
+    THEME_DARK: {
+        TAG_BLACK: 'light grey',
+        TAG_BLUE: '#7289DA',
+        TAG_GREEN: '#4E9D4E',
+        TAG_GREY: 'grey',
+        TAG_ORANGE: '#FF981F',
+        TAG_RED: '#F04747',
+        'background': '#36393E'
+    },
+    THEME_LIGHT: {
+        TAG_BLACK: 'black',
+        TAG_BLUE: 'blue',
+        TAG_GREEN: 'green',
+        TAG_GREY: 'grey',
+        TAG_ORANGE: 'orange',
+        TAG_RED: 'red',
+        'background': 'white'
+    }
+}
+
 class WhisperAttack:
     def __init__(self, root):
         start_logging()
         self.root = root
         self.root.title("WhisperAttack")
+        custom_font = font.Font(family="GG Sans", size=11)
         text_area = scrolledtext.ScrolledText(self.root, wrap=WORD, width=100, height=50, state=DISABLED)
+        text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
         self.writer = WhisperAttackWriter(text_area)
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
@@ -470,23 +504,17 @@ class WhisperAttack:
         server = WhisperServer(self.writer)
         server.run_server()
 
-TAG_BLACK = 'black'
-TAG_BLUE = 'blue'
-TAG_GREEN = 'green'
-TAG_GREY = 'grey'
-TAG_ORANGE = 'orange'
-TAG_RED = 'red'
-
 class WhisperAttackWriter:
     def __init__(self, text_area):
         self.text_area = text_area
         self.text_area.pack(padx=10, pady=10)
-        self.text_area.tag_configure(TAG_BLACK, foreground=TAG_BLACK)
-        self.text_area.tag_configure(TAG_BLUE, foreground=TAG_BLUE)
-        self.text_area.tag_configure(TAG_GREEN, foreground=TAG_GREEN)
-        self.text_area.tag_configure(TAG_GREY, foreground=TAG_GREY)
-        self.text_area.tag_configure(TAG_ORANGE, foreground=TAG_ORANGE)
-        self.text_area.tag_configure(TAG_RED, foreground=TAG_RED)
+        style = theme_config[theme]
+        self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
+        self.text_area.tag_configure(TAG_BLUE, foreground=style[TAG_BLUE])
+        self.text_area.tag_configure(TAG_GREEN, foreground=style[TAG_GREEN])
+        self.text_area.tag_configure(TAG_GREY, foreground=style[TAG_GREY])
+        self.text_area.tag_configure(TAG_ORANGE, foreground=style[TAG_ORANGE])
+        self.text_area.tag_configure(TAG_RED, foreground=style[TAG_RED])
         
     def write(self, text, tag = TAG_BLACK):
         self.text_area.config(state=NORMAL)
