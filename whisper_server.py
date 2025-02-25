@@ -99,7 +99,7 @@ def correct_dcs_and_phonetics_separately(
     dcs_list,
     phonetic_list,
     dcs_threshold=85,
-    phonetic_threshold=80
+    phonetic_threshold=85
 ):
     """
     Applies fuzzy matching for DCS callsigns and the phonetic alphabet.
@@ -372,7 +372,7 @@ class WhisperServer:
                 self.dcs_airports,
                 phonetic_alphabet,
                 dcs_threshold=85,
-                phonetic_threshold=80
+                phonetic_threshold=85
             )
             logging.info(f"Cleaned transcription: {cleaned_text}")
             logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
