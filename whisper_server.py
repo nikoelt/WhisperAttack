@@ -9,8 +9,6 @@ import subprocess
 import unicodedata
 import tempfile
 import keyboard
-import torch
-from faster_whisper import WhisperModel
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
@@ -19,7 +17,7 @@ from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
-from tkinter import Tk, font, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 
 # Set the working directory to the script's folder.
@@ -265,12 +263,16 @@ class WhisperServer:
         """
         whisper_model = self.config.get("whisper_model", "small.en")
         whisper_device = self.config.get("whisper_device", "CPU")
-        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
-        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
+        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
+        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
+        import torch
+        from faster_whisper import WhisperModel
         
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
                 self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
+                logging.info('Successfully loaded Whisper model')
+                self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
                 return
             else:
                 logging.error("cuda not available so using CPU")
@@ -430,8 +432,8 @@ class WhisperServer:
             self.writer.write(f"Unknown command: {cmd}", TAG_ORANGE)
 
     def run_server(self):
-        logging.info(f"Server started and listening on {HOST}:{PORT}...")
-        self.writer.write(f"Server started and listening on {HOST}:{PORT}...", TAG_GREEN)
+        logging.info(f"Server started and listening on {HOST}:{PORT}")
+        self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
