@@ -89,20 +89,20 @@ Double click the `WhisperAttack.exe` file or shortcut. This will open an applica
 
 The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray.
 
+WhisperAttack will have completed loading once the "Server started and listening" message is displayed.
+
+```
+2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU ...
+2025-01-04 12:00:03 - INFO - Server started and listening on 127.0.0.1:65432...
+```
+
 The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
 
-```
-2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
-2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
-```
-
-A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhipserAttack window, or to exit the application.
+A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhisperAttack window, or to exit the application.
 
 Closing VoiceAttack will also stop and close WhisperAttack.
 
-**NOTE:** Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
-
-![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+**NOTE:** There may be a slow startup time for the Whisper Model to download. This process only needs to take place once (unless you change the Whisper Model to be used)
 
 ---
 
