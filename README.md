@@ -37,9 +37,6 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 
 ## Requirements
 
-- **CUDA 12**
-  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
-
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
   - Plugins Enabled
@@ -47,6 +44,10 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
   - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
+
+- **CUDA 12**
+  - WhisperAttack requires the CUDA 12 runtime. This is included with WhisperAttack however if you get a "Library cublas64_12.dll is not found" error then you will need to install the CUDA Toolkit 12. Only the Runtime > Libraries need to be installed if presented with a list of components to install.
+  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
 
 ---
 
