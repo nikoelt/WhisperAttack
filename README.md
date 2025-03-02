@@ -86,24 +86,28 @@ inter=Inter
 
 ## Running the Whisper Server
 
-Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server. This may take a few seconds for the initial loading.
+Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server.
 
-The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray.
+The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray. WhisperAttack will continue running even when the window is closed.
 
 WhisperAttack will have completed loading once the "Server started and listening" message is displayed.
 
 ```
-Loading Whisper model (small), device=GPU ...
+Loading Whisper model (small.en), device=GPU ...
 Server started and listening on 127.0.0.1:65432...
 ```
 
-The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
+![whisperattack_voiceattack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
 
 A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhisperAttack window, or to exit the application.
+
+![whisperattack_systemtrayicon](./screenshots/WhisperAttack%20system%20tray.png)
 
 Closing VoiceAttack will also stop and close WhisperAttack.
 
 **NOTE:** There may be a slow startup time for the Whisper Model to download. This process only needs to take place once (unless you change the Whisper Model to be used)
+
+The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
 
 ---
 
