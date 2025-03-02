@@ -1,0 +1,8 @@
+__MACOSX
+.DS_Store
+
+.venv
+dist
+build
+
+whisper_server.exe

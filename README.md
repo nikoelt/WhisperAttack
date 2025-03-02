@@ -4,20 +4,13 @@ This repository provides a single-server approach for using OpenAI Whisper local
 
 This is a fork for further integration of **KneeboardWhisper** by the amazing creator [@BojoteX](https://github.com/BojoteX). A special thank you goes to [@hradec](https://github.com/hradec), whose original script used Google Voice Recognition, [@SeaTechNerd83](https://github.com/SeaTechNerd83) for helping combine the two approaches and creating a VA plugin and finally [@sleighzy](https://github.com/sleighzy) for VAICOM implementation and the lengthy list of bug fixes and enchancements that would fill this page
 
-In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. The Script will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
-
-![image](https://github.com/user-attachments/assets/26c79d80-d95a-4c31-be9a-dd5f61d36245)
-
-
-
+In short, SeaTechNerd83 and I combined the two scripts to run voice commands through Whisper using BojoteX's code and then pushed it into VoiceAttack using hradec's code. To speed this up, I unified the codebase into one file and made it run a server to send commands to VoiceAttack. WhisperAttack will run on any Turing or newer architecture Nvidia GPU with 6GB or more of VRAM will run this script along with DCS (performance tuning may be required for lower VRAM cards) although absolute minimum spec GPU has not yet been confirmed
 
 ---
 
-
-
 ## Features
 
-- **Single Server Script** (`whisper_server.py`):
+- **OpenAI Whisper models**:
   - Loads the Whisper model once on GPU or CPU.
   - Records mic audio on demand (via socket commands).
   - Transcribes the `.wav` file using Whisper.
@@ -32,6 +25,7 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
   - Push-to-Talk style workflow with VoiceAttack press & release.
   - Extremely accurate voice recognition (No more VoiceAttack misunderstanding you!)
 
+---
 
 ## VAICOM integration
 
@@ -41,57 +35,26 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 
 ---
 
-
 ## Requirements
-
-- **Python 3.11** (must be in your PATH)
-  - Install from [python.org](https://www.python.org/downloads/release/python-3119), use [this link](https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe) for the Windows (64-bit) installer.
-  - NOTE! v3.12 3.13 etc... will NOT work - PyTorch only provides official wheels for Python 3.8 → 3.11
-
-![python](https://github.com/user-attachments/assets/1b23945c-2635-40ea-a8b1-51bbfbe2a7b4)
-
 
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
   - Plugins Enabled
 
-- **FFmpeg** (must be in your PATH)
-  - Needed by Whisper for audio decoding.
-  - Install via opening terminal and:
-    - `winget install ffmpeg`
-
 - **GPU (Optional, but Recommended)**
   - Whisper runs faster on an NVIDIA GPU with CUDA.
   - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
 
-
-
+- **CUDA 12**
+  - WhisperAttack requires the CUDA 12 runtime. This is included with WhisperAttack however if you get a "Library cublas64_12.dll is not found" error then you will need to install the CUDA Toolkit 12. Only the Runtime > Libraries need to be installed if presented with a list of components to install.
+  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
 
 ---
 
-### Installation  
-- Download the latest release from this repo and unarchive anywhere on your computer. I used C:/WhisperAttack as an example
-- Simply run the script, and it will automatically check for and install any missing dependencies. No manual setup is required! But please make sure you have Python 3.11 and FFmpeg installed above
-- NOTE! The first start will take some time as dependecies and OpenAI Whsiper model will be installed
----
+## Installation
 
-
-
-## Running the Whisper Server
-1. Double click whisper_server.py
-
-- You’ll see logs like:
-
-```
-2025-01-04 12:00:00 - INFO - Loading Whisper model (small.en), device=GPU
-2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
-```
-
-- Leave this terminal open. The server must keep running to handle start/stop commands.
-
-NOTE: Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
-
-![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+1. Download the latest release [WhisperAttack v1.0.0.zip file from the Google drive](https://drive.google.com/drive/folders/1z-a-dgxeQS6Aj_jNq2mhuZNBfFwbaoNP?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
 
@@ -121,10 +84,36 @@ inter=Inter
 
 ---
 
+## Running the Whisper Server
+
+Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server.
+
+The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray. WhisperAttack will continue running even when the window is closed.
+
+WhisperAttack will have completed loading once the "Server started and listening" message is displayed.
+
+```
+Loading Whisper model (small.en), device=GPU ...
+Server started and listening on 127.0.0.1:65432...
+```
+
+![whisperattack_voiceattack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
+
+A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhisperAttack window, or to exit the application.
+
+![whisperattack_systemtrayicon](./screenshots/WhisperAttack%20system%20tray.png)
+
+Closing VoiceAttack will also stop and close WhisperAttack.
+
+**NOTE:** There may be a slow startup time for the Whisper Model to download. This process only needs to take place once (unless you change the Whisper Model to be used)
+
+The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
+
+---
+
 ## Configuring VoiceAttack
 
-Pre-configured Voice Attack Profile is added to the release for your convinience. You must modify it to point to where you have placed WhisperAttack on your computer. 
-It is recommended to read through the steps below to understand how whisper injections actually work!
+Pre-configured Voice Attack Profile is added to the release for your convenience. It is recommended to read through the steps below to understand how whisper injections actually work!
 
 ### 1. Disable all speech recognition within VoiceAttack
 
@@ -133,28 +122,28 @@ It is recommended to read through the steps below to understand how whisper inje
 <img width="840" alt="VoiceAttack_startup" src="https://github.com/user-attachments/assets/fc0bfd3c-d0aa-4501-95ce-a31fa9c78790" />
 
 ### 2. Enable Plugin support in VoiceAttack
-- Go to **Options → General → Enable Plugin Support**.
 
+Go to **Options → General → Enable Plugin Support**.
 
 ![EnablePluginsVA](https://github.com/user-attachments/assets/8bb6faf2-4aa4-416b-99cd-6b9b2a6c0097)
 
 ### 3. Place Plugin in VoiceAttack Apps folder
-- After extracting the .zip file, Locate the `WhisperAttackServerCommand` folder and copy the entire folder
+
+After extracting the .zip file, Locate the `WhisperAttackServerCommand` folder and copy the entire folder
 
 ![image](https://github.com/user-attachments/assets/dcd75f43-b957-4551-86bf-650468586834)
 
-- Locate the VoiceAttack Apps Folder
+Locate the VoiceAttack Apps Folder
 
 ![image](https://github.com/user-attachments/assets/413de21d-e7a8-4086-ad9f-c97354716ab3)
 
-- Paste the entire `WhisperAttackServerCommand` folder into the Apps folder
+Paste the entire `WhisperAttackServerCommand` folder into the Apps folder
 
 ![image](https://github.com/user-attachments/assets/fd856417-34b7-4f39-b3a9-bf4ea0e79871)
 
-- If the plugin is enabled and active and everything is set up correctly, VoiceAttack should give these messages on startup:
+If the plugin is enabled and active and everything is set up correctly, VoiceAttack should give these messages on startup:
 
 ![image](https://github.com/user-attachments/assets/287e0a3c-7891-40a1-96bf-842f26dccd77)
-
 
 
 ### 4. Create Recording commands
@@ -162,26 +151,30 @@ It is recommended to read through the steps below to understand how whisper inje
 In VoiceAttack, go to **Edit Profile**.
 
 #### New Command for "Start Whisper Recording":
+
 - **When this command executes:**
   - Go to **Other → Advancced → Execute an External Plugin Function**.
   - **Plugin**: Point it to 'WASC V0.1beta'
   - **Plugin Context:**
+
 ```
-    Start Whisper Recording
+Start Whisper Recording
 ```
-- Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
+
+Assign a joystick or key press to this command (e.g., "Joystick Button 14 (pressed)").
 
 ![Whisperattackreadme](https://github.com/user-attachments/assets/ee96bc06-8fe6-45b0-9999-076eb0e0cc00)
 
 #### Another Command for "Stop Whisper Recording":
 
-- Same steps, except the **Parameters** is:
+Same steps, except the **Parameters** is:
 
-    ```
-    Stop Whisper Recording
-    ```
+```
+Stop Whisper Recording
+```
 
-- Assign the same joystick button but check **"Shortcut is invoked only when released."**
+Assign the same joystick button but check **"Shortcut is invoked only when released."**
+
 ![Whisperattackreadme1](https://github.com/user-attachments/assets/9c84d4f8-00c0-4525-8cda-0c0ddda24298)
 
 ---
@@ -201,43 +194,17 @@ Once completed, you must say "Note" followed by what you would like to transcrib
 
 ## Troubleshooting
 
-### File Found And Not Found
-- If the Whisper server fails to transcribe the audio file and exhibits something similar to this:
-```
-File exists, size = 98256 bytes
-Transcribing C:\Users\XXXXXX\AppData\Local\Temp\whisper_temp_recording.wav...
-Failed to transcribe audio: [WinError 2] The system cannot find the file specified
-No transcription result.
-```
-- This means FFmpeg is not installed either on your system or in the PATH (see requirements section for FFmpeg download) and making FFmpeg available in the PATH on your system should remedy the issue.
+### Library cublas64_12.dll is not found`
 
-### Could not find a version that satisfies the requirement torch
-- If you get a an error like this:
+If the below below is displayed in the logs then ensure that CUDA 12 is available, e.g. by installing the [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads)
+
+```console
+ERROR - Failed to transcribe audio: Library cublas64_12.dll is not found or cannot be loaded
 ```
-ip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-Looking in indexes: https://download.pytorch.org/whl/cu118
-ERROR: Could not find a version that satisfies the requirement torch (from versions: none)
-ERROR: No matching distribution found for torch
-```
-- Then check your Python version. PyTorch only provides official wheels for Python 3.8 → 3.11 (64-bit) on Windows. As of January 2025 latest version of Python is 3.13.# and this version will not work!
-  
+
 ---
 
-## Advanced Configuration
-
-### Adding back Punctuation
-
-If you look at whisper_server.py code, you see the following call:
-
-``result = self.model.transcribe(audio_path, language='en', suppress_tokens="0,11,13,30")``
-
-You’d modify it to:
-
-```result = self.model.transcribe(audio_path, language='en')```
-
-Everything else stays the same. Whisper will then start adding punctuation symbols when decoding the transcribed text. Further discussions can be found here: https://github.com/openai/whisper/discussions/589
-
-### Performance (AI Model)
+## Performance (AI Model)
 
 If WhisperAttack is causing significant studders, It is likely that the current model is overloading your VRAM. If this is the case, studders can be alleviated by changing the model size (extra information on the models is available in the table below) in the `settings.cfg` file as follows:
 
@@ -247,6 +214,8 @@ whisper_model=base.en
 
 - Using smaller models will reduce VRAM and compute costs. See below for a full speed breakdown
 - First activation with a new AI model will prompt the model to be downloaded which may take an extended amount of time depending on internet speed.
+
+---
 
 ## Available models and languages
 
