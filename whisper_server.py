@@ -21,6 +21,7 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 from tkinter import Tk, font, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
+import darkdetect
 
 # Set the working directory to the script's folder.
 # NOTE: this is currently commented out as this breaks when run
@@ -167,7 +168,8 @@ def custom_cleanup_text(text, word_mappings):
 # WHISPER SERVER
 ###############################################################################
 class WhisperServer:
-    def __init__(self, writer):
+    def __init__(self, config, writer):
+        self.config = config
         self.writer = writer
         self.model = None
         self.recording = False
@@ -177,39 +179,16 @@ class WhisperServer:
         self.stop_event = threading.Event()
 
         # Will be loaded from text files:
-        self.config = {}
         self.dcs_airports = []
         self.word_mappings = {}
 
         # Location to the VoiceAttack executable
-        self.voiceattack = None
+        self.voiceattack = self.get_voiceattack()
 
-        self.load_configuration()
         self.load_custom_word_files()
         self.load_whisper_model()
 
-    def load_configuration(self):
-        """
-        Loads configuration settings.
-        """
-        if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
-            try:
-                with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        parts = line.split('=', maxsplit=1)
-                        if len(parts) == 2:
-                            source, target = parts
-                            self.config[source.strip()] = target.strip()
-                logging.info(f"Loaded configuration: {self.config}")
-                self.writer.write("Loaded configuration:", TAG_BLUE)
-                self.writer.write_dict(self.config, TAG_GREY)
-            except Exception as e:
-                logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
-                self.writer.write(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}", TAG_RED)
-
+    def get_voiceattack(self):
         voiceattack_location = self.config.get("voiceattack_location", "")
         if os.path.isfile(voiceattack_location):
             self.voiceattack = voiceattack_location
@@ -463,10 +442,10 @@ TAG_GREY = 'grey'
 TAG_ORANGE = 'orange'
 TAG_RED = 'red'
 
+THEME_DEFAULT = 'default'
 THEME_DARK = 'dark'
 THEME_LIGHT = 'light'
 
-theme = THEME_LIGHT
 theme_config = {
     THEME_DARK: {
         TAG_BLACK: 'light grey',
@@ -488,24 +467,68 @@ theme_config = {
     }
 }
 
+class ConfigurationError(Exception):
+    pass
+
 class WhisperAttack:
     def __init__(self, root):
         start_logging()
+        
+        self.config = self.load_configuration()
+
         self.root = root
         self.root.title("WhisperAttack")
+
+        theme = self.get_theme()
         custom_font = font.Font(family="GG Sans", size=11)
         text_area = scrolledtext.ScrolledText(self.root, wrap=WORD, width=100, height=50, state=DISABLED)
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
-        self.writer = WhisperAttackWriter(text_area)
+        self.writer = WhisperAttackWriter(theme, text_area)
+
+        self.writer.write("Loaded configuration:", TAG_BLUE)
+        self.writer.write_dict(self.config, TAG_GREY)
+
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
+
+    def load_configuration(self):
+        """
+        Loads configuration settings.
+        """
+        config = {}
+        if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
+            try:
+                with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        parts = line.split('=', maxsplit=1)
+                        if len(parts) == 2:
+                            source, target = parts
+                            config[source.strip()] = target.strip()
+            except Exception as e:
+                logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
+                self.writer.write(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}", TAG_RED)
+        else:
+            raise ConfigurationError(f"The configuration settings.cfg file could not be found")
+
+        logging.info(f"Loaded configuration: {config}")
+        return config
+
+    def get_theme(self):
+        theme = self.config.get("theme", THEME_DEFAULT)
+        if theme == THEME_DEFAULT:
+            return darkdetect.theme().lower()
+        else:
+            return theme
 
     def startup(self, icon):
         icon.visible = True
-        server = WhisperServer(self.writer)
+        server = WhisperServer(self.config, self.writer)
         server.run_server()
 
 class WhisperAttackWriter:
-    def __init__(self, text_area):
+    def __init__(self, theme, text_area):
         self.text_area = text_area
         self.text_area.pack(padx=10, pady=10)
         style = theme_config[theme]
