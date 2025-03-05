@@ -17,7 +17,7 @@ from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
-from tkinter import Tk, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 import darkdetect
 
