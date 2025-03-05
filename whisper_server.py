@@ -9,8 +9,6 @@ import subprocess
 import unicodedata
 import tempfile
 import keyboard
-import torch
-from faster_whisper import WhisperModel
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
@@ -19,7 +17,7 @@ from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
-from tkinter import Tk, font, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 import darkdetect
 
@@ -100,7 +98,7 @@ def correct_dcs_and_phonetics_separately(
     dcs_list,
     phonetic_list,
     dcs_threshold=85,
-    phonetic_threshold=80
+    phonetic_threshold=85
 ):
     """
     Applies fuzzy matching for DCS callsigns and the phonetic alphabet.
@@ -244,12 +242,16 @@ class WhisperServer:
         """
         whisper_model = self.config.get("whisper_model", "small.en")
         whisper_device = self.config.get("whisper_device", "CPU")
-        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
-        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device}")
+        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
+        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
+        import torch
+        from faster_whisper import WhisperModel
         
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
                 self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
+                logging.info('Successfully loaded Whisper model')
+                self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
                 return
             else:
                 logging.error("cuda not available so using CPU")
@@ -351,7 +353,7 @@ class WhisperServer:
                 self.dcs_airports,
                 phonetic_alphabet,
                 dcs_threshold=85,
-                phonetic_threshold=80
+                phonetic_threshold=85
             )
             logging.info(f"Cleaned transcription: {cleaned_text}")
             logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
@@ -409,8 +411,8 @@ class WhisperServer:
             self.writer.write(f"Unknown command: {cmd}", TAG_ORANGE)
 
     def run_server(self):
-        logging.info(f"Server started and listening on {HOST}:{PORT}...")
-        self.writer.write(f"Server started and listening on {HOST}:{PORT}...", TAG_GREEN)
+        logging.info(f"Server started and listening on {HOST}:{PORT}")
+        self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()

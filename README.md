@@ -37,9 +37,6 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 
 ## Requirements
 
-- **CUDA 12**
-  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
-
 - **VoiceAttack**
   - [voiceattack.com](https://voiceattack.com)
   - Plugins Enabled
@@ -48,11 +45,15 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
   - Whisper runs faster on an NVIDIA GPU with CUDA.
   - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
 
+- **CUDA 12**
+  - WhisperAttack requires the CUDA 12 runtime. This is included with WhisperAttack however if you get a "Library cublas64_12.dll is not found" error then you will need to install the CUDA Toolkit 12. Only the Runtime > Libraries need to be installed if presented with a list of components to install.
+  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
+
 ---
 
 ## Installation
 
-1. Download the latest release zip and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. Download the latest release [WhisperAttack v1.0.0.zip file from the Google drive](https://drive.google.com/drive/folders/1z-a-dgxeQS6Aj_jNq2mhuZNBfFwbaoNP?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
 1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
@@ -85,24 +86,28 @@ inter=Inter
 
 ## Running the Whisper Server
 
-Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server. This may take a few seconds for the initial loading.
+Double click the `WhisperAttack.exe` file or shortcut. This will open an application window and start the server.
 
-The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray.
+The application window will display startup logging information, the raw text transcribed from the speech, and the final cleaned up command ot text that was sent to VoiceAttack or DCS. The window can be closed, and then shown again from the menu in the WhisperAttack icon in the Windows system tray. WhisperAttack will continue running even when the window is closed.
 
-The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
+WhisperAttack will have completed loading once the "Server started and listening" message is displayed.
 
 ```
-2025-01-04 12:00:00 - INFO - Loading Whisper model (small), device=GPU
-2025-01-04 12:00:03 - INFO - Starting socket server on 127.0.0.1:65432...
+Loading Whisper model (small.en), device=GPU ...
+Server started and listening on 127.0.0.1:65432...
 ```
 
-A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhipserAttack window, or to exit the application.
+![whisperattack_voiceattack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
+
+A WhisperAttack icon will be placed in your Windows system tray. Right-clicking this will give options to show the WhisperAttack window, or to exit the application.
+
+![whisperattack_systemtrayicon](./screenshots/WhisperAttack%20system%20tray.png)
 
 Closing VoiceAttack will also stop and close WhisperAttack.
 
-**NOTE:** Make sure to wait for the Whisper Model to download. This process only needs to take place once (unless you change Whisper Models)
+**NOTE:** There may be a slow startup time for the Whisper Model to download. This process only needs to take place once (unless you change the Whisper Model to be used)
 
-![image](https://github.com/user-attachments/assets/3cd88c7f-05a9-4afc-ae6a-9402e564c3df)
+The Whisper server will output logs to the `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file.
 
 ---
 
