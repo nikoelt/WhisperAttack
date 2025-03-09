@@ -8,24 +8,18 @@ import logging
 import subprocess
 import unicodedata
 import tempfile
+import re
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
 import keyboard
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
-import re
 from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
-from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
 from pid import PidFile, PidFileError
 import darkdetect
-
-# Set the working directory to the script's folder.
-# NOTE: this is currently commented out as this breaks when run
-# as an executable as it attempts to set this to the _internal directory,
-# which does not contain the icon, settings.cfg, and other config files
-# os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 ###############################################################################
 # CONFIG
@@ -47,7 +41,10 @@ exit_event = threading.Event()
 ###############################################################################
 # ADMIN PRIVILEGES CHECK AND RE-LAUNCH
 ###############################################################################
-def is_admin():
+def is_admin() -> bool:
+    """
+    Returns true if the user has admin privileges to run WhisperAttack.
+    """
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except Exception:
@@ -55,9 +52,9 @@ def is_admin():
 
 if not is_admin():
     # Build a properly quoted command line from sys.argv
-    params = " ".join(f'"{arg}"' for arg in sys.argv)
+    PARAMS = " ".join(f'"{arg}"' for arg in sys.argv)
     ret = ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, params, None, 1
+        None, "runas", sys.executable, PARAMS, None, 1
     )
     if ret <= 32:
         print("Error: Failed to elevate privileges.")
@@ -73,12 +70,18 @@ LOCAL_APPDATA_DIR = os.getenv('LOCALAPPDATA')
 WHISPER_APPDATA_DIR = os.path.join(LOCAL_APPDATA_DIR , "WhisperAttack")
 # Create the AppData directory for WhisterAttack if it does not already exist
 os.makedirs(WHISPER_APPDATA_DIR, exist_ok=True)
-# Lock file to create to prevent multiple instances being run
-LOCK_FILE = os.path.join(WHISPER_APPDATA_DIR, 'whisper_attack')
 
-def start_logging():
+def start_logging() -> None:
+    """
+    Start logging to the %LOCALAPPDATA%\WhisperAttack directory.
+    """
     log_file = os.path.join(WHISPER_APPDATA_DIR, "WhisperAttack.log")
-    logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        filename=log_file,
+        filemode='w',
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 
 ###############################################################################
 # PHONETIC ALPHABET
@@ -94,12 +97,12 @@ phonetic_alphabet = [
 # FUZZY MATCH + CLEANUP
 ###############################################################################
 def correct_dcs_and_phonetics_separately(
-    text,
-    dcs_list,
-    phonetic_list,
+    text: str,
+    dcs_list: list[str],
+    phonetic_list: list[str],
     dcs_threshold=85,
     phonetic_threshold=85
-):
+) -> str:
     """
     Applies fuzzy matching for DCS callsigns and the phonetic alphabet.
     """
@@ -140,7 +143,7 @@ def correct_dcs_and_phonetics_separately(
         corrected_tokens.append(best_token)
     return " ".join(corrected_tokens)
 
-def replace_word_mappings(word_mappings, text):
+def replace_word_mappings(word_mappings: dict[str, str], text: str) -> str:
     """
     Replace transcribed words with custom words from their mapped values.
     """
@@ -149,7 +152,7 @@ def replace_word_mappings(word_mappings, text):
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     return text
 
-def custom_cleanup_text(text, word_mappings):
+def custom_cleanup_text(text: str, word_mappings: dict[str, str]) -> str:
     """
     Performs several cleanup steps on the transcribed text.
     """
@@ -166,35 +169,43 @@ def custom_cleanup_text(text, word_mappings):
 # WHISPER SERVER
 ###############################################################################
 class WhisperServer:
-    def __init__(self, config, writer):
-        self.config = config
+    """
+    Class that runs a socket server to listen for incoming commands.
+    Commands will start or stop the recording of audio to a wav file.
+    Once recording has stopped the audio will be transcribed to text and
+    sent to either VoiceAttack or the DCS kneeboard.
+    """
+    def __init__(self, config: dict[str, str], writer):
         self.writer = writer
         self.model = None
         self.recording = False
         self.audio_file = AUDIO_FILE
         self.wave_file = None
         self.stream = None
-        self.stop_event = threading.Event()
 
         # Will be loaded from text files:
         self.dcs_airports = []
         self.word_mappings = {}
 
         # Location to the VoiceAttack executable
-        self.voiceattack = self.get_voiceattack()
+        self.voiceattack = self.get_voiceattack(config)
 
         self.load_custom_word_files()
-        self.load_whisper_model()
+        self.load_whisper_model(config)
 
-    def get_voiceattack(self):
-        voiceattack_location = self.config.get("voiceattack_location", "")
+    def get_voiceattack(self, config) -> str | None:
+        """
+        Returns the path to the VoiceAttack executable after validating
+        that it is present at the location specified in the configuration.
+        """
+        voiceattack_location = config.get("voiceattack_location", "")
         if os.path.isfile(voiceattack_location):
-            self.voiceattack = voiceattack_location
-        else:
-            logging.error(f"VoiceAttack could not be located at: '{voiceattack_location}'")
-            self.writer.write(f"VoiceAttack could not be located at: '{voiceattack_location}'", TAG_RED)
+            return voiceattack_location
+        logging.error("VoiceAttack could not be located at: '%s'", voiceattack_location)
+        self.writer.write(f"VoiceAttack could not be located at: '{voiceattack_location}'", TAG_RED)
+        return None
 
-    def load_custom_word_files(self):
+    def load_custom_word_files(self) -> None:
         """
         Loads fuzzy words and word mappings from text files.
         """
@@ -210,14 +221,14 @@ class WhisperServer:
                             aliases, target = parts
                             target = target.strip()
                             list(map(lambda alias: self.word_mappings.update({ alias: target }), aliases.split(';')))
-                logging.info(f"Loaded word mappings: {self.word_mappings}")
+                logging.info("Loaded word mappings: %s", self.word_mappings)
                 self.writer.write("Loaded word mappings:", TAG_BLUE)
                 self.writer.write_dict(self.word_mappings, TAG_GREY)
             except Exception as e:
-                logging.error(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}")
+                logging.error("Failed to load word mappings from %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
                 self.writer.write(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
         else:
-            logging.warning(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.")
+            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
             self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
@@ -230,19 +241,19 @@ class WhisperServer:
                 self.writer.write("Loaded fuzzy words:", TAG_BLUE)
                 self.writer.write(f"{self.dcs_airports}", TAG_GREY)
             except Exception as e:
-                logging.error(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}")
+                logging.error("Failed to load fuzzy words from %s: %s", FUZZY_WORDS_TEXT_FILE, e)
                 self.writer.write(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}", TAG_RED)
         else:
-            logging.warning(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.")
+            logging.warning("%s not found; fuzzy matching list is empty.", FUZZY_WORDS_TEXT_FILE)
             self.writer.write(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.", TAG_ORANGE)
 
-    def load_whisper_model(self):
+    def load_whisper_model(self, config) -> None:
         """
         Loads the Whisper model.
         """
-        whisper_model = self.config.get("whisper_model", "small.en")
-        whisper_device = self.config.get("whisper_device", "CPU")
-        logging.info(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
+        whisper_model = config.get("whisper_model", "small.en")
+        whisper_device = config.get("whisper_device", "CPU")
+        logging.info("Loading Whisper model (%s), device=%s ...", whisper_model, whisper_device)
         self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
         import torch
         from faster_whisper import WhisperModel
@@ -252,18 +263,20 @@ class WhisperServer:
                 self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
                 logging.info('Successfully loaded Whisper model')
                 self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
-                return
-            else:
-                logging.error("cuda not available so using CPU")
-                self.writer.write("cuda not available so using CPU", TAG_RED)
-        
+                return None
+            logging.error("cuda not available so using CPU")
+            self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
+        return None
 
-    def start_recording(self):
+    def start_recording(self) -> None:
+        """
+        Begin recording to a wav file.
+        """
         if self.recording:
             logging.info("Already recording—ignoring start command.")
             self.writer.write("Already recording—ignoring start command", TAG_ORANGE)
-            return
+            return None
         logging.info("Starting recording...")
         self.writer.write("Starting recording...", TAG_GREY)
         self.wave_file = sf.SoundFile(
@@ -273,9 +286,9 @@ class WhisperServer:
             channels=1,
             subtype='FLOAT'
         )
-        def audio_callback(indata, frames, time_info, status):
+        def audio_callback(indata, _frames, _time_info, status):
             if status:
-                logging.info(f"Audio Status: {status}")
+                logging.info("Audio Status: %s", status)
             self.wave_file.write(indata)
         self.stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
@@ -285,12 +298,16 @@ class WhisperServer:
         )
         self.stream.start()
         self.recording = True
+        return None
 
-    def stop_and_transcribe(self):
+    def stop_and_transcribe(self) -> None:
+        """
+        Stops the currently running recording to then have this transcribed.
+        """
         if not self.recording:
             logging.warning("Not currently recording—ignoring stop command.")
             self.writer.write("Not currently recording—ignoring stop command", TAG_ORANGE)
-            return
+            return None
         logging.info("Stopping recording...")
         self.writer.write("Stopped recording", TAG_GREY)
         self.stream.stop()
@@ -300,10 +317,10 @@ class WhisperServer:
         self.wave_file = None
         self.recording = False
         time.sleep(0.01)
-        logging.info(f"Checking if file exists: {self.audio_file}")
+        logging.info("Checking if file exists: %s", self.audio_file)
         if os.path.exists(self.audio_file):
             size = os.path.getsize(self.audio_file)
-            logging.info(f"File exists, size = {size} bytes")
+            logging.info("File exists, size = %s bytes", size)
         else:
             logging.error(("File does NOT exist according to os.path.exists()!"))
             self.writer.write("File does NOT exist according to os.path.exists()!", TAG_RED)
@@ -313,11 +330,16 @@ class WhisperServer:
         else:
             logging.info("No transcription result.")
             self.writer.write("No transcription result", TAG_GREY)
+        return None
 
-    def transcribe_audio(self, audio_path):
+    def transcribe_audio(self, audio_path: str) -> str | None:
+        """
+        Transcribes the recorded audio to text and then returns the final result
+        after running it through functions to cleanup the raw text.
+        """
         try:
-            logging.info(f"Transcribing {audio_path}...")
-            segments, info = self.model.transcribe(
+            logging.info("Transcribing %s...", audio_path)
+            segments, _ = self.model.transcribe(
                 audio_path,
                 language='en',
                 beam_size=5,
@@ -342,11 +364,11 @@ class WhisperServer:
             for segment in segments:
                 raw_text += f"{segment.text}"
 
-            logging.info(f"Raw transcription result: '{raw_text}'")
+            logging.info("Raw transcription result: '%s'", raw_text)
             self.writer.write(f"Raw transcribed text: '{raw_text}'", TAG_BLUE)
             # Ignore blank audio as nothing has been recorded
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
-                return
+                return None
             cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
             fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
                 cleaned_text,
@@ -355,15 +377,15 @@ class WhisperServer:
                 dcs_threshold=85,
                 phonetic_threshold=85
             )
-            logging.info(f"Cleaned transcription: {cleaned_text}")
-            logging.info(f"Fuzzy-corrected transcription: {fuzzy_corrected_text}")
+            logging.info("Cleaned transcription: %s", cleaned_text)
+            logging.info("Fuzzy-corrected transcription: %s", fuzzy_corrected_text)
             return fuzzy_corrected_text
         except Exception as e:
-            logging.error(f"Failed to transcribe audio: {e}")
+            logging.error("Failed to transcribe audio: %s", e)
             self.writer.write(f"Failed to transcribe audio: {e}", TAG_RED)
-            return ""
+            return None
 
-    def send_to_voiceattack(self, text):
+    def send_to_voiceattack(self, text: str) -> None:
         """
         Sends the transcribed text to VoiceAttack or copies it to the clipboard
         if the text starts with the trigger phrase.
@@ -378,26 +400,29 @@ class WhisperServer:
                 self.writer.write(f"Sent text to DCS: {text_for_kneeboard}", TAG_GREEN)
                 logging.info("DCS kneeboard populated")
             except Exception as e:
-                logging.error(f"Failed to simulate keyboard shortcut: {e}")
+                logging.error("Failed to simulate keyboard shortcut: %s", e)
                 self.writer.write(f"Failed to simulate keyboard shortcut: {e}", TAG_RED)
 
             # Do NOT send to VoiceAttack if trigger word "note " was used
             return
         if self.voiceattack is None:
-            logging.error(f"VoiceAttack not found so command will not be sent")
-            self.writer.write(f"VoiceAttack not found so command will not be sent", TAG_RED)
+            logging.error("VoiceAttack not found so command will not be sent")
+            self.writer.write("VoiceAttack not found so command will not be sent", TAG_RED)
             return
         try:
-            logging.info(f"Sending recognized text to VoiceAttack: {text}")
+            logging.info("Sending recognized text to VoiceAttack: %s", text)
             subprocess.call([self.voiceattack, '-command', text])
             self.writer.write(f"Sent text to VoiceAttack: {text}", TAG_GREEN)
         except Exception as e:
-            logging.error(f"Error calling VoiceAttack: {e}")
+            logging.error("Error calling VoiceAttack: %s", e)
             self.writer.write(f"Error calling VoiceAttack: {e}", TAG_RED)
 
-    def handle_command(self, cmd):
+    def handle_command(self, cmd: str) -> None:
+        """
+        Triggers the operation for the associated command that was received.
+        """
         cmd = cmd.strip().lower()
-        logging.info(f"Received command: {cmd}")
+        logging.info("Received command: %s", cmd)
         if cmd == "start":
             self.start_recording()
         elif cmd == "stop":
@@ -407,11 +432,14 @@ class WhisperServer:
             self.writer.write("Received shutdown command. Stopping server...")
             shut_down(icon)
         else:
-            logging.warning(f"Unknown command: {cmd}")
+            logging.warning("Unknown command: %s", cmd)
             self.writer.write(f"Unknown command: {cmd}", TAG_ORANGE)
 
-    def run_server(self):
-        logging.info(f"Server started and listening on {HOST}:{PORT}")
+    def run_server(self) -> None:
+        """
+        Starts a socket server and listens for incoming commands.
+        """
+        logging.info("Server started and listening on %s:%s", HOST, PORT)
         self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
@@ -420,7 +448,7 @@ class WhisperServer:
 
             while not exit_event.is_set():
                 try:
-                    conn, addr = s.accept()
+                    conn, _ = s.accept()
                     with conn:
                         data = conn.recv(1024).decode('utf-8')
                         if data:
@@ -428,7 +456,7 @@ class WhisperServer:
                 except socket.timeout:
                     continue
                 except Exception as e:
-                    logging.error(f"Socket error: {e}")
+                    logging.error("Socket error: %s", e)
                     self.writer.write(f"Socket error: {e}", TAG_RED)
                     continue
         if self.recording:
@@ -470,20 +498,30 @@ theme_config = {
 }
 
 class ConfigurationError(Exception):
-    pass
+    """
+    Basic exception class for errors loading configuration
+    """
 
 class WhisperAttack:
-    def __init__(self, root):
+    """
+    Class for the main WhisperAttack application.
+    """
+    def __init__(self, root: Tk):
         start_logging()
-        
-        self.config = self.load_configuration()
 
+        self.config = self.load_configuration()
         self.root = root
         self.root.title("WhisperAttack")
 
         theme = self.get_theme()
         custom_font = font.Font(family="GG Sans", size=11)
-        text_area = scrolledtext.ScrolledText(self.root, wrap=WORD, width=100, height=50, state=DISABLED)
+        text_area = scrolledtext.ScrolledText(
+            self.root,
+            wrap=WORD,
+            width=100,
+            height=50,
+            state=DISABLED
+        )
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
         self.writer = WhisperAttackWriter(theme, text_area)
 
@@ -492,7 +530,7 @@ class WhisperAttack:
 
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
-    def load_configuration(self):
+    def load_configuration(self) -> dict[str, str]:
         """
         Loads configuration settings.
         """
@@ -509,28 +547,38 @@ class WhisperAttack:
                             source, target = parts
                             config[source.strip()] = target.strip()
             except Exception as e:
-                logging.error(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}")
+                logging.error("Failed to load configuration settings from %s: %s", CONFIGURATION_SETTINGS_FILE, e)
                 self.writer.write(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}", TAG_RED)
         else:
-            raise ConfigurationError(f"The configuration settings.cfg file could not be found")
+            raise ConfigurationError("The configuration settings.cfg file could not be found")
 
-        logging.info(f"Loaded configuration: {config}")
+        logging.info("Loaded configuration: %s", config)
         return config
 
-    def get_theme(self):
+    def get_theme(self) -> str:
+        """
+        Returns the name of the theme to be used when displaying
+        UI elements. When the configuration is set to "default" then
+        the name returned will be the current Windows theme.
+        """
         theme = self.config.get("theme", THEME_DEFAULT)
         if theme == THEME_DEFAULT:
             return darkdetect.theme().lower()
-        else:
-            return theme
+        return theme
 
-    def startup(self, icon):
+    def startup(self, _icon) -> None:
+        """
+        Start the WhisperAttack server.
+        """
         icon.visible = True
         server = WhisperServer(self.config, self.writer)
         server.run_server()
 
 class WhisperAttackWriter:
-    def __init__(self, theme, text_area):
+    """
+    A class used to write to the text area within the WhisperAttack window.
+    """
+    def __init__(self, theme: str, text_area: scrolledtext.ScrolledText):
         self.text_area = text_area
         self.text_area.pack(padx=10, pady=10)
         style = theme_config[theme]
@@ -540,31 +588,51 @@ class WhisperAttackWriter:
         self.text_area.tag_configure(TAG_GREY, foreground=style[TAG_GREY])
         self.text_area.tag_configure(TAG_ORANGE, foreground=style[TAG_ORANGE])
         self.text_area.tag_configure(TAG_RED, foreground=style[TAG_RED])
-        
-    def write(self, text, tag = TAG_BLACK):
+
+    def write(self, text: str, tag = TAG_BLACK) -> None:
+        """
+        Write a line to the text area.
+        This sets the state to NORMAL so that it is writable then
+        sets to DISABLED afterwards so that the text area is readonly
+        """
         self.text_area.config(state=NORMAL)
         self.text_area.insert(END, text + "\n", tag)
         self.text_area.see(END)
         self.text_area.config(state=DISABLED)
 
-    def write_dict(self, dict, tag = TAG_BLACK):
-        for key, value in dict.items():
+    def write_dict(self, dictionary: dict[str, str], tag = TAG_BLACK) -> None:
+        """
+        Write the dictionary as a formatted set of keys and values.
+        """
+        for key, value in dictionary.items():
             self.write(f"{key}: {value}", tag)
 
-def shut_down(icon):
+def shut_down(_icon) -> None:
+    """
+    Shutdown the Whisper server and then exit the application.
+    """
     logging.info("Shutting down server...")
     exit_event.set()
     icon.visible = False
     icon.stop()
     window.destroy()
 
-def show_window(icon, item):
+def show_window(_icon, _item) -> None:
+    """
+    Show the window from the system tray.
+    """
     window.after(0, window.deiconify)
 
-def withdraw_window():
+def withdraw_window() -> None:
+    """
+    Hide the window when closed, returns it to the system tray.
+    """
     window.withdraw()
 
-def open_modal(message):
+def open_modal(message: str) -> None:
+    """
+    Open a modal dialog to display messages.
+    """
     modal = Toplevel(window)
     modal.title("WhisperAttack")
     modal.geometry("800x300")
@@ -591,7 +659,14 @@ icon = Icon(
 # MAIN
 ###############################################################################
 def main():
-    with PidFile(LOCK_FILE):
+    """
+    Run the WhisperAttack application.
+    This is run using a lock file so that only one instance
+    can be run at a time.
+    """
+    # Lock file to create to prevent multiple instances being run
+    lock_file = os.path.join(WHISPER_APPDATA_DIR, 'whisper_attack')
+    with PidFile(lock_file):
         WhisperAttack(window)
         window.mainloop()
 
@@ -599,13 +674,12 @@ if __name__ == "__main__":
     try:
         main()
     except PidFileError as pid_error:
-        # Ignore as means possibly another instance of application
+        # Error means possibly another instance of application
         # is already running, this second attempt will be killed.
         open_modal("WhisperAttack is already running")
-        pass
     except Exception as e:
         import traceback
-        trace = traceback.format_exc()
-        logging.error(f"Server error: {e}\n\n{trace}")
-        open_modal(f"Unexpected server error: {e}\n\n{trace}")
+        TRACE = traceback.format_exc()
+        logging.error("Server error: %s\n\n%s", e, TRACE)
+        open_modal(f"Unexpected server error: {e}\n\n{TRACE}")
         shut_down(icon)
