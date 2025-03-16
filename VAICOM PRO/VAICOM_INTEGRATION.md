@@ -70,6 +70,8 @@ You should see the following occur:
 1. VoiceAttack locate the correct "When I say" command and send it to VAICOM
 1. The associated radio command made in DCS
 
+![WhisperAttack UI and VoiceAttack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
+
 ## Updating VoiceAttack Keyword Collections
 
 The VSPX keywords exported from VAICOM will contain wildcards (`*`) for some words. For example, `Air Defense*`, `Ground Target*`, etc. This means that VAICOM will accept both singlular and plural versions of this, e.g. `Air Defense` and `Air Defenses`. Because the VoiceAttack commands do not support these wildcards the exported keyword collection needs to be updated to use both options. This requires changing `Air Defense*` to `Air Defense; Air Defenses`.
