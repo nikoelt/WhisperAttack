@@ -53,7 +53,7 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
 
 ## Installation
 
-1. Download the latest release [WhisperAttack v1.0.0.zip file from the Google drive](https://drive.google.com/drive/folders/1z-a-dgxeQS6Aj_jNq2mhuZNBfFwbaoNP?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. Download the latest release [WhisperAttack v1.1.0.zip file from the Google drive](https://drive.google.com/drive/folders/1Is1y4gGxFxoCw428E3U2Xtzj08ZOzC3e?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
 1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
