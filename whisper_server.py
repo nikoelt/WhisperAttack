@@ -10,6 +10,7 @@ import unicodedata
 import tempfile
 import re
 from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
+import traceback
 import keyboard
 import sounddevice as sd
 import soundfile as sf
@@ -356,7 +357,7 @@ class WhisperServer:
                     "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
                     "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
                     "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-                    "alphabet Alpha, Bravo, Charlie, X-ray. "
+                    "alphabet Alpha, Bravo, Charlie, X-ray."
                 )
             )
 
@@ -528,6 +529,7 @@ class WhisperAttack:
         self.writer.write("Loaded configuration:", TAG_BLUE)
         self.writer.write_dict(self.config, TAG_GREY)
 
+        threading.excepthook = self.handle_exception
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
     def load_configuration(self) -> dict[str, str]:
@@ -573,6 +575,15 @@ class WhisperAttack:
         icon.visible = True
         server = WhisperServer(self.config, self.writer)
         server.run_server()
+
+    def handle_exception(self, args) -> None:
+        """
+        Handle errors from the Whisper Server thread
+        """
+        trace = traceback.format_exc()
+        logging.error("Server error: %s\n\n%s", args.exc_value, trace)
+        open_modal(f"Unexpected server error: {args.exc_value}")
+        shut_down(icon)
 
 class WhisperAttackWriter:
     """
@@ -678,8 +689,7 @@ if __name__ == "__main__":
         # is already running, this second attempt will be killed.
         open_modal("WhisperAttack is already running")
     except Exception as e:
-        import traceback
         TRACE = traceback.format_exc()
         logging.error("Server error: %s\n\n%s", e, TRACE)
-        open_modal(f"Unexpected server error: {e}\n\n{TRACE}")
+        open_modal(f"Unexpected server error: {e}")
         shut_down(icon)
