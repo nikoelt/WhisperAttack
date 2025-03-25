@@ -254,14 +254,15 @@ class WhisperServer:
         """
         whisper_model = config.get("whisper_model", "small.en")
         whisper_device = config.get("whisper_device", "CPU")
-        logging.info("Loading Whisper model (%s), device=%s ...", whisper_model, whisper_device)
+        whisper_compute_type = config.get("whisper_compute_type", "int8_float16")
+        logging.info("Loading Whisper model (%s), device=%s, compute_type=%s ...", whisper_model, whisper_device, whisper_compute_type)
         self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
         import torch
         from faster_whisper import WhisperModel
         
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
-                self.model = WhisperModel(whisper_model, device="cuda", compute_type="int8_float16")
+                self.model = WhisperModel(whisper_model, device="cuda", compute_type=whisper_compute_type)
                 logging.info('Successfully loaded Whisper model')
                 self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
                 return None

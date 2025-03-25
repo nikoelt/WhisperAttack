@@ -202,6 +202,20 @@ If the below below is displayed in the logs then ensure that CUDA 12 is availabl
 ERROR - Failed to transcribe audio: Library cublas64_12.dll is not found or cannot be loaded
 ```
 
+### ValueError: Requested int8_float16 compute type ###
+
+The below error can be displayed for some GPUs which do not support certain compute types.
+
+```console
+ValueError: Requested int8_float16 compute type, but the target device or backend do not support efficient int8_float16 computation.
+```
+
+The `settings.cfg` file can be updated to add the below entry to use another supported compute type:
+
+```console
+whisper_compute_type=int8
+```
+
 ---
 
 ## Performance (AI Model)
