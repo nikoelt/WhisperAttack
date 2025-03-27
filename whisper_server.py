@@ -535,6 +535,7 @@ class WhisperAttack:
             height=50,
             state=DISABLED
         )
+        text_area.pack(expand=True, fill='both')
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
         self.writer = WhisperAttackWriter(theme, text_area)
 
