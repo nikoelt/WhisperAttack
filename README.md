@@ -202,6 +202,28 @@ If the below below is displayed in the logs then ensure that CUDA 12 is availabl
 ERROR - Failed to transcribe audio: Library cublas64_12.dll is not found or cannot be loaded
 ```
 
+### ValueError: Requested int8_float16 compute type ###
+
+For some GPUs which do not support certain compute types, i.e. do not have tensor cores, the below message will be output to the logs:
+
+```
+WARNING - GPU does not have tensor cores, major=6, minor=1
+```
+
+WhisperAttack can detect this and will fallback on supported values for cuda cores.
+
+If however the below error message is displayed then the `settings.cfg` file can be updated.
+
+```console
+ValueError: Requested int8_float16 compute type, but the target device or backend do not support efficient int8_float16 computation.
+```
+
+The `settings.cfg` file can be updated to add the below entry:
+
+```console
+whisper_core_type=standard
+```
+
 ---
 
 ## Performance (AI Model)
