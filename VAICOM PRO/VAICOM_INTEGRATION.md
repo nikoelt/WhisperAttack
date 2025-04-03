@@ -19,25 +19,17 @@ be an exact match on the text between wildcards. This breaks the VAICOM integrat
 The exported key words from the VAICOM database when run in this mode use official supported "When I say" VoiceAttack syntax that is required for Whisper.
 This syntax allows for full sentences, with optional words and dynamic use of participant names etc.
 
-**TODO:** document any updates required for the VSPX key words exported from VAICOM to handle existing `*` wild cards, and the correct order of key words
-for dynamic participants in sentences.
-
 ## VAICOM PRO keywords database
 
 The VAICOM PRO configuration contains an editor that can be used to add aliases for commands. WhisperAttack converts textual numbers to numerical values, e.g. "two" is 2. Because of this aliases will need to be added for keywords that contain textual numbers. For example, your wingman has the existing aliases of "two", "winger", and "bozo". You will need to add another alias for this with a value of `1`. This will need to be repeated for the other wingmen, and other items in the list of aliases shown in the editor. Refer to the VAICOM manual for instructions on how to do this.
 
 ![keywords database](./screenshots/VAICOM%20keywords%20database.png)
 
+**NOTE:** As of VAICOM 3.0.0 support has been added so that wingmen, and other items, are already present with numerical values so do not need to be updated.
+
 ## VAICOM PRO VoiceAttack profile
 
-The default VAICOM PRO profile that is imported into VoiceAttack requires modifications for executing the `WASC` (WhisperAttackSendCommand) plugin with the `Start Whisper Recording` or `Stop Whisper Recording` Plugin Context value when TX buttons are pressed and released. There are also changes required to the import for the "When I say" keyword collections as wildcards (`*`) are not supported.
-
-There are two options:
-- The first is to import the "WhisperAttack for VAICOM PRO.vap" profile provided here that contains these changes. This is the recommended option as provides a good base and can be used as a reference when updating with your own keyword collections. The key words in this profile have been updated to remove other occurrances of
-the `*` wildcard syntax and the correct ordering of participant and wingman callsigns in dynamic commands.
-- The other is to duplicate and modify your existing profile. This means you can revert to the original profile if you break anything to start these steps again or compare differences. This will require you to update your VSPX exported keywords for the modifiying dynamic sentences containing participants and sentence structure.
-
-**TODO:** Add instructions and information on what needs to be modified in the profile keyword collections and other extension packs.
+The default VAICOM PRO profile that is imported into VoiceAttack requires modifications for executing the `WASC` (WhisperAttackSendCommand) plugin with the `Start Whisper Recording` or `Stop Whisper Recording` Plugin Context value when TX buttons are pressed and released.
 
 ### Disable speech recognition
 
@@ -71,11 +63,3 @@ You should see the following occur:
 1. The associated radio command made in DCS
 
 ![WhisperAttack UI and VoiceAttack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
-
-## Updating VoiceAttack Keyword Collections
-
-The VSPX keywords exported from VAICOM will contain wildcards (`*`) for some words. For example, `Air Defense*`, `Ground Target*`, etc. This means that VAICOM will accept both singlular and plural versions of this, e.g. `Air Defense` and `Air Defenses`. Because the VoiceAttack commands do not support these wildcards the exported keyword collection needs to be updated to use both options. This requires changing `Air Defense*` to `Air Defense; Air Defenses`.
-
-Note, the VAICOM database does not require a change to add these aliases in the Editor configuration, VAICOM will continue to handle both cases.
-
-The `WhisperAttack for VAICOM PRO` profile in this repository has been updated for this and contains examples of it that can be followed.
