@@ -63,3 +63,35 @@ You should see the following occur:
 1. The associated radio command made in DCS
 
 ![WhisperAttack UI and VoiceAttack](./screenshots/WhisperAttack%20UI%20and%20VoiceAttack.png)
+
+## Importing VAICOM F10 menu items
+
+The VAICOM database is automatically updated with items from the F10 menu, if you have enabled this option in the VAICOM settings. These items are exported to the clipboard and `keywords.csv` file with a prefix of `Action` when clicking Finish in VAICOM, or performing an export. The keywords can be used to update your VoiceAttack profile. This however does not happen when using the VSPX mode in VAICOM, only when not using VSPX. Whilst these aree exported to the `keywords.csv` file they are not put in the clipboard or `keywords.txt` file so you cannot automatically update your VoiceAttack profile with those. This can be solved using the below manual steps to add these yourself.
+
+Perform an Export from the VAICOM editor and the `keywords.csv` file will be created in your `VoiceAttack\apps\VAICOMPRO\Export` directory. As per the screenshot below these appear under the `;Imported F10 menu commands;` heading.
+
+![Vaicom CSV keywords](./screenshots/Vaicom%20CSV%20keywords.png)
+
+For each of these lines copy the blue text, including the semicolon `;` character, and paste them into a file in single line. For example:
+
+```
+Action Bogey Dope; Action Request Picture; Friendly Picture; Action Load Recon;
+```
+
+Next you will need to add this to the end of the keywords collection in your VoiceAttack profile. For example, if the current keywords collection ends in:
+
+```
+Server; Mystery; Mission;
+```
+
+then after pasting this in it would be:
+
+```
+Server; Mystery; Mission; Action Bogey Dope; Action Request Picture; Friendly Picture; Action Load Recon;
+```
+
+You can then save this update to the VoiceAttack profile.
+
+**Note** If you update your VAICOM database, e.g. after reseting it and clicking Finish, and then copy the keywords from the clipboard to your VoiceAttack profile the F10 menu items would be lost. This is due to VAICOM not exporting those for VSPX. You will need to reapply those to the end of the keywords collection again.
+
+Hopefully in the future VAICOM will export those in the same way it does for the non-VSPX mode so that these manual steps are no longer necessary.
