@@ -162,7 +162,7 @@ def custom_cleanup_text(text: str, word_mappings: dict[str, str]) -> str:
     text = t2d.convert(text)
     text = re.sub(r"(?<=\d)-(?=\d)", " ", text)
     text = re.sub(r'\b0\d+\b', lambda x: ' '.join(x.group()), text)
-    text = re.sub(r"([^\w\s])*(?:[^\w\-\w])", " ", text)
+    text = re.sub(r"([^\w\d\s])*(?![\w\-\w])(?![^-])?", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
