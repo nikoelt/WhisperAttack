@@ -191,7 +191,8 @@ class WhisperServer:
         # Location to the VoiceAttack executable
         self.voiceattack = self.get_voiceattack(config)
 
-        self.load_custom_word_files()
+        self.load_word_mappings()
+        self.load_fuzzy_words()
         self.load_whisper_model(config)
 
     def get_voiceattack(self, config) -> str | None:
@@ -206,9 +207,9 @@ class WhisperServer:
         self.writer.write(f"VoiceAttack could not be located at: '{voiceattack_location}'", TAG_RED)
         return None
 
-    def load_custom_word_files(self) -> None:
+    def load_word_mappings(self) -> None:
         """
-        Loads fuzzy words and word mappings from text files.
+        Loads word mappings from text files.
         """
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
@@ -232,6 +233,10 @@ class WhisperServer:
             logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
             self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
+    def load_fuzzy_words(self) -> None:
+        """
+        Loads fuzzy words from text files.
+        """
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
                 with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
