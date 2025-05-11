@@ -542,7 +542,7 @@ class WhisperAttack:
             height=50,
             state=DISABLED
         )
-        text_area.pack(expand=True, fill='both')
+        text_area.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
 
         self.reload_icon = PhotoImage(file="reload_icon.png")
@@ -555,7 +555,10 @@ class WhisperAttack:
             padx=5, pady=5,
             command=self.reload_word_mappings
         )
-        word_mappings_reload_button.pack(side=LEFT, pady=10, padx=10)
+        word_mappings_reload_button.grid(row=1, column=0, sticky='w', pady=10, padx=10)
+
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
 
         self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
@@ -630,7 +633,6 @@ class WhisperAttackWriter:
     """
     def __init__(self, theme: str, text_area: scrolledtext.ScrolledText):
         self.text_area = text_area
-        self.text_area.pack(padx=10, pady=10)
         style = theme_config[theme]
         self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
         self.text_area.tag_configure(TAG_BLUE, foreground=style[TAG_BLUE])
