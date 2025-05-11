@@ -211,6 +211,7 @@ class WhisperServer:
         """
         Loads word mappings from text files.
         """
+        self.word_mappings = {}
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
                 with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
@@ -532,6 +533,7 @@ class WhisperAttack:
         self.root.title("WhisperAttack")
 
         theme = self.get_theme()
+        
         custom_font = font.Font(family="GG Sans", size=11)
         text_area = scrolledtext.ScrolledText(
             self.root,
@@ -542,10 +544,15 @@ class WhisperAttack:
         )
         text_area.pack(expand=True, fill='both')
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
-        self.writer = WhisperAttackWriter(theme, text_area)
 
+        word_mappings_reload_button = Button(self.root, text="Reload word mappings", command=self.reload_word_mappings)
+        word_mappings_reload_button.pack(pady=10)
+
+        self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
         self.writer.write_dict(self.config, TAG_GREY)
+
+        self.whisper_server = WhisperServer(self.config, self.writer)
 
         threading.excepthook = self.handle_exception
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
@@ -574,6 +581,9 @@ class WhisperAttack:
 
         logging.info("Loaded configuration: %s", config)
         return config
+    
+    def reload_word_mappings(self) -> None:
+        self.whisper_server.load_word_mappings()
 
     def get_theme(self) -> str:
         """
@@ -591,8 +601,7 @@ class WhisperAttack:
         Start the WhisperAttack server.
         """
         icon.visible = True
-        server = WhisperServer(self.config, self.writer)
-        server.run_server()
+        self.whisper_server.run_server()
 
     def handle_exception(self, args) -> None:
         """
