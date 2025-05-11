@@ -9,7 +9,7 @@ import subprocess
 import unicodedata
 import tempfile
 import re
-from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
 import traceback
 import keyboard
 import sounddevice as sd
@@ -545,8 +545,17 @@ class WhisperAttack:
         text_area.pack(expand=True, fill='both')
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
 
-        word_mappings_reload_button = Button(self.root, text="Reload word mappings", command=self.reload_word_mappings)
-        word_mappings_reload_button.pack(pady=10)
+        self.reload_icon = PhotoImage(file="reload_icon.png")
+        word_mappings_reload_button = Button(
+            self.root,
+            font=custom_font,
+            text="Reload word mappings",
+            image=self.reload_icon,
+            compound=LEFT,
+            padx=5, pady=5,
+            command=self.reload_word_mappings
+        )
+        word_mappings_reload_button.pack(side=LEFT, pady=10, padx=10)
 
         self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
@@ -583,6 +592,9 @@ class WhisperAttack:
         return config
     
     def reload_word_mappings(self) -> None:
+        """
+        Call the WhisperServer function to reload the word mappings.
+        """
         self.whisper_server.load_word_mappings()
 
     def get_theme(self) -> str:
