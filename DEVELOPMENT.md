@@ -85,9 +85,10 @@ pyinstaller --onedir --noconsole whisper_server.py
 Copy the following files into the `dist\whisper_server` directory as these must be located beside the executable
 
 - settings.cfg
-- word_mappings.txt
 - fuzzy_words.txt
+- word_mappings.txt
 - whisper_attack_icon.png
+- reload_icon.png
 
 The `whisper_server` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice. Rename `whisper_server.exe` to `WhisperAttack.exe`.
 
