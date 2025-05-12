@@ -9,7 +9,7 @@ import subprocess
 import unicodedata
 import tempfile
 import re
-from tkinter import Tk, scrolledtext, Button, Label, Toplevel, font, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Toplevel, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
 import traceback
 import keyboard
 import sounddevice as sd
@@ -191,7 +191,8 @@ class WhisperServer:
         # Location to the VoiceAttack executable
         self.voiceattack = self.get_voiceattack(config)
 
-        self.load_custom_word_files()
+        self.load_word_mappings()
+        self.load_fuzzy_words()
         self.load_whisper_model(config)
 
     def get_voiceattack(self, config) -> str | None:
@@ -206,10 +207,11 @@ class WhisperServer:
         self.writer.write(f"VoiceAttack could not be located at: '{voiceattack_location}'", TAG_RED)
         return None
 
-    def load_custom_word_files(self) -> None:
+    def load_word_mappings(self) -> None:
         """
-        Loads fuzzy words and word mappings from text files.
+        Loads word mappings from text files.
         """
+        self.word_mappings = {}
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
                 with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
@@ -232,6 +234,10 @@ class WhisperServer:
             logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
             self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
+    def load_fuzzy_words(self) -> None:
+        """
+        Loads fuzzy words from text files.
+        """
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
                 with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
@@ -527,6 +533,7 @@ class WhisperAttack:
         self.root.title("WhisperAttack")
 
         theme = self.get_theme()
+        
         custom_font = font.Font(family="GG Sans", size=11)
         text_area = scrolledtext.ScrolledText(
             self.root,
@@ -535,12 +542,29 @@ class WhisperAttack:
             height=50,
             state=DISABLED
         )
-        text_area.pack(expand=True, fill='both')
+        text_area.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
-        self.writer = WhisperAttackWriter(theme, text_area)
 
+        self.reload_icon = PhotoImage(file="reload_icon.png")
+        word_mappings_reload_button = Button(
+            self.root,
+            font=custom_font,
+            text="Reload word mappings",
+            image=self.reload_icon,
+            compound=LEFT,
+            padx=5, pady=5,
+            command=self.reload_word_mappings
+        )
+        word_mappings_reload_button.grid(row=1, column=0, sticky='w', pady=10, padx=10)
+
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
+
+        self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
         self.writer.write_dict(self.config, TAG_GREY)
+
+        self.whisper_server = WhisperServer(self.config, self.writer)
 
         threading.excepthook = self.handle_exception
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
@@ -569,6 +593,12 @@ class WhisperAttack:
 
         logging.info("Loaded configuration: %s", config)
         return config
+    
+    def reload_word_mappings(self) -> None:
+        """
+        Call the WhisperServer function to reload the word mappings.
+        """
+        self.whisper_server.load_word_mappings()
 
     def get_theme(self) -> str:
         """
@@ -586,8 +616,7 @@ class WhisperAttack:
         Start the WhisperAttack server.
         """
         icon.visible = True
-        server = WhisperServer(self.config, self.writer)
-        server.run_server()
+        self.whisper_server.run_server()
 
     def handle_exception(self, args) -> None:
         """
@@ -604,7 +633,6 @@ class WhisperAttackWriter:
     """
     def __init__(self, theme: str, text_area: scrolledtext.ScrolledText):
         self.text_area = text_area
-        self.text_area.pack(padx=10, pady=10)
         style = theme_config[theme]
         self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
         self.text_area.tag_configure(TAG_BLUE, foreground=style[TAG_BLUE])
