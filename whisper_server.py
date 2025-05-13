@@ -287,6 +287,30 @@ class WhisperServer:
             self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
         return None
+    
+    def add_word_mapping(self, aliases: str, replacement: str) -> None:
+        """
+        Adds a new alias and replacement to the word mappings
+        """
+        if aliases.strip() == "":
+            return None
+
+        list(map(lambda alias: self.word_mappings.update({ alias: replacement }), aliases.split(';')))
+        if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
+            try:
+                with open(WORD_MAPPINGS_TEXT_FILE, 'a', encoding='utf-8') as f:
+                    f.write(f"\n{aliases}={replacement}")
+                    f.close()
+                logging.info("Added aliases: %s", aliases)
+                logging.info("Added replacement: %s", replacement)
+                self.writer.write("Added new word mapping", TAG_BLUE)
+                self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
+            except Exception as e:
+                logging.error("Failed to add new word mapping to %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
+                self.writer.write(f"Failed to add new word mapping to {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
+        else:
+            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
+            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
     def start_recording(self) -> None:
         """
@@ -607,7 +631,7 @@ class WhisperAttack:
         return config
     
     def add_word_mapping(self) -> None:
-        WhisperAttackWordMappings(self.root, self.writer)
+        WhisperAttackWordMappings(self.root, self.whisper_server, self.writer)
     
     def reload_word_mappings(self) -> None:
         """
@@ -678,7 +702,8 @@ class WhisperAttackWordMappings:
     """
     A class used to display a UI and handle the adding of new word mappings.
     """
-    def __init__(self, root: Tk, writer: WhisperAttackWriter):
+    def __init__(self, root: Tk, whisper_server: WhisperServer, writer: WhisperAttackWriter):
+        self.whisper_server = whisper_server
         self.writer = writer
 
         modal = Toplevel(root)
@@ -709,22 +734,11 @@ class WhisperAttackWordMappings:
         def add_word_mapping() -> None:
             aliases = aliases_entry.get()
             replacement = replacement_entry.get()
-            self.update_word_mappings(aliases, replacement)
+            self.whisper_server.add_word_mapping(aliases,replacement)
             modal.destroy()
 
         Button(modal, text="Cancel", command=modal.destroy).grid(row=3, column=0, sticky=W, padx=10, pady=5)
         Button(modal, text="Ok", command=add_word_mapping).grid(row=3, column=1, sticky=E, padx=10, pady=5)
-
-    def update_word_mappings(self, aliases: str, replacement: str) -> None:
-        """
-        Update the list of wordings mappings with the new one.
-        """
-        if aliases.strip() == "":
-            return None
-        logging.info(f"Added aliases {aliases}")
-        logging.info(f"Added replacement {replacement}")
-        self.writer.write("Added new word mapping", TAG_BLUE)
-        self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
 
 def shut_down(_icon) -> None:
     """
