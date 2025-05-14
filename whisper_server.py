@@ -9,7 +9,7 @@ import subprocess
 import unicodedata
 import tempfile
 import re
-from tkinter import Tk, scrolledtext, Button, Label, Toplevel, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
+from tkinter import Tk, scrolledtext, Button, Label, Entry, Toplevel, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, EW, NSEW
 import traceback
 import keyboard
 import sounddevice as sd
@@ -287,6 +287,30 @@ class WhisperServer:
             self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
         return None
+    
+    def add_word_mapping(self, aliases: str, replacement: str) -> None:
+        """
+        Adds a new alias and replacement to the word mappings
+        """
+        if aliases.strip() == "":
+            return None
+
+        list(map(lambda alias: self.word_mappings.update({ alias: replacement }), aliases.split(';')))
+        if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
+            try:
+                with open(WORD_MAPPINGS_TEXT_FILE, 'a', encoding='utf-8') as f:
+                    f.write(f"\n{aliases}={replacement}")
+                    f.close()
+                logging.info("Added aliases: %s", aliases)
+                logging.info("Added replacement: %s", replacement)
+                self.writer.write("Added new word mapping", TAG_BLUE)
+                self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
+            except Exception as e:
+                logging.error("Failed to add new word mapping to %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
+                self.writer.write(f"Failed to add new word mapping to {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
+        else:
+            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
+            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
     def start_recording(self) -> None:
         """
@@ -542,8 +566,20 @@ class WhisperAttack:
             height=50,
             state=DISABLED
         )
-        text_area.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
+        text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
         text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
+
+        self.add_icon = PhotoImage(file="add_icon.png")
+        word_mappings_add_button = Button(
+            self.root,
+            font=custom_font,
+            text="Add word mapping",
+            image=self.add_icon,
+            compound=LEFT,
+            padx=5, pady=5,
+            command=self.add_word_mapping
+        )
+        word_mappings_add_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
 
         self.reload_icon = PhotoImage(file="reload_icon.png")
         word_mappings_reload_button = Button(
@@ -555,7 +591,7 @@ class WhisperAttack:
             padx=5, pady=5,
             command=self.reload_word_mappings
         )
-        word_mappings_reload_button.grid(row=1, column=0, sticky='w', pady=10, padx=10)
+        word_mappings_reload_button.grid(row=1, column=0, sticky=E, pady=10, padx=10)
 
         root.grid_rowconfigure(0, weight=1)
         root.grid_columnconfigure(0, weight=1)
@@ -593,6 +629,9 @@ class WhisperAttack:
 
         logging.info("Loaded configuration: %s", config)
         return config
+    
+    def add_word_mapping(self) -> None:
+        WhisperAttackWordMappings(self.root, self.whisper_server, self.writer)
     
     def reload_word_mappings(self) -> None:
         """
@@ -658,6 +697,48 @@ class WhisperAttackWriter:
         """
         for key, value in dictionary.items():
             self.write(f"{key}: {value}", tag)
+
+class WhisperAttackWordMappings:
+    """
+    A class used to display a UI and handle the adding of new word mappings.
+    """
+    def __init__(self, root: Tk, whisper_server: WhisperServer, writer: WhisperAttackWriter):
+        self.whisper_server = whisper_server
+        self.writer = writer
+
+        modal = Toplevel(root)
+        modal.title = "Add word mapping"
+        modal_width = 400
+        modal_height = 120
+        modal.geometry(f"{modal_width}x{modal_height}")
+        modal.transient(root)
+        modal.grab_set()
+        # Center the modal over the parent window
+        parent_x = root.winfo_x()
+        parent_y = root.winfo_y()
+        parent_width = root.winfo_width()
+        parent_height = root.winfo_height()
+        x = parent_x + (parent_width // 2) - (modal_width // 2)
+        y = parent_y + (parent_height // 2) - (modal_height // 2)
+        modal.geometry(f"{modal_width}x{modal_height}+{x}+{y}")
+
+        Label(modal, text="Aliases").grid(row=0, sticky=E, padx=5)
+        Label(modal, text="Replacement").grid(row=1, sticky=E, padx=5)
+
+        modal.columnconfigure(1, weight=1)
+        aliases_entry = Entry(modal)
+        replacement_entry = Entry(modal)
+        aliases_entry.grid(row=0, column=1, sticky=EW, padx=10, pady=10)
+        replacement_entry.grid(row=1, column=1, sticky=EW, padx=10, pady=10)
+
+        def add_word_mapping() -> None:
+            aliases = aliases_entry.get()
+            replacement = replacement_entry.get()
+            self.whisper_server.add_word_mapping(aliases,replacement)
+            modal.destroy()
+
+        Button(modal, text="Cancel", command=modal.destroy).grid(row=3, column=0, sticky=W, padx=10, pady=5)
+        Button(modal, text="Ok", command=add_word_mapping).grid(row=3, column=1, sticky=E, padx=10, pady=5)
 
 def shut_down(_icon) -> None:
     """
