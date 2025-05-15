@@ -177,6 +177,7 @@ class WhisperServer:
     sent to either VoiceAttack or the DCS kneeboard.
     """
     def __init__(self, config: dict[str, str], writer):
+        self.config = config
         self.writer = writer
         self.model = None
         self.recording = False
@@ -193,7 +194,6 @@ class WhisperServer:
 
         self.load_word_mappings()
         self.load_fuzzy_words()
-        self.load_whisper_model(config)
 
     def get_voiceattack(self, config) -> str | None:
         """
@@ -482,6 +482,8 @@ class WhisperServer:
         """
         Starts a socket server and listens for incoming commands.
         """
+        self.load_whisper_model(self.config)
+
         logging.info("Server started and listening on %s:%s", HOST, PORT)
         self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
