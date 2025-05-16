@@ -1,3 +1,4 @@
+ttkbootstrap
 keyboard
 transformers
 faster_whisper
