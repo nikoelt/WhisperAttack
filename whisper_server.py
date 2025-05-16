@@ -9,10 +9,11 @@ import subprocess
 import unicodedata
 import tempfile
 import re
-from tkinter import scrolledtext, Button, Label, StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, NSEW
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
 import traceback
+from tkinter import Button, Label, StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, NSEW
+import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledText
+from ttkbootstrap.constants import *
 import keyboard
 import sounddevice as sd
 import soundfile as sf
@@ -565,15 +566,16 @@ class WhisperAttack:
             self.root.style.theme_use("flatly")
 
         custom_font = font.Font(family="GG Sans", size=11)
-        text_area = scrolledtext.ScrolledText(
+        text_area = ScrolledText(
             self.root,
             wrap=WORD,
             width=100,
             height=50,
-            state=DISABLED
+            state=DISABLED,
+            autohide=True,
+            font=custom_font
         )
         text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
-        text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
 
         self.add_icon = PhotoImage(file="add_icon.png")
         word_mappings_add_button = Button(
@@ -725,7 +727,7 @@ class WhisperAttackWriter:
     """
     A class used to write to the text area within the WhisperAttack window.
     """
-    def __init__(self, theme: str, text_area: scrolledtext.ScrolledText):
+    def __init__(self, theme: str, text_area: ScrolledText):
         self.text_area = text_area
         style = theme_config[theme]
         self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
@@ -741,10 +743,10 @@ class WhisperAttackWriter:
         This sets the state to NORMAL so that it is writable then
         sets to DISABLED afterwards so that the text area is readonly
         """
-        self.text_area.config(state=NORMAL)
+        self.text_area.text.configure(state=NORMAL)
         self.text_area.insert(END, text + "\n", tag)
         self.text_area.see(END)
-        self.text_area.config(state=DISABLED)
+        self.text_area.text.configure(state=DISABLED)
 
     def write_dict(self, dictionary: dict[str, str], tag = TAG_BLACK) -> None:
         """
