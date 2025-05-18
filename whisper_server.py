@@ -10,8 +10,8 @@ import unicodedata
 import tempfile
 import re
 import traceback
-from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, NSEW
-import ttkbootstrap as ttk
+from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
+from ttkbootstrap import Window, Toplevel, Button, Frame, Label, Entry, Style
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.constants import *
 import keyboard
@@ -552,7 +552,7 @@ class WhisperAttack:
     """
     Class for the main WhisperAttack application.
     """
-    def __init__(self, root: ttk.Window):
+    def __init__(self, root: Window):
         start_logging()
 
         self.config = self.load_configuration()
@@ -565,11 +565,13 @@ class WhisperAttack:
             self.root.style.theme_use("flatly")
 
         custom_font = font.Font(family="GG Sans", size=11)
-        ttk.Style().configure('TButton', font=custom_font)
-        ttk.Style().configure('TLabel', font=custom_font)
+        Style().configure('TButton', font=custom_font)
+        Style().configure('TLabel', font=custom_font)
 
+        text_area_frame = Frame(self.root)
+        text_area_frame.pack(padx=10, pady=10, fill="x")
         text_area = ScrolledText(
-            self.root,
+            text_area_frame,
             wrap=WORD,
             width=100,
             height=50,
@@ -577,30 +579,19 @@ class WhisperAttack:
             autohide=True,
             font=custom_font
         )
-        text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
+        text_area.pack(fill="x", expand=True)
 
+        button_frame = Frame(self.root)
+        button_frame.pack(padx=10, pady=10, fill="x")
         self.add_icon = PhotoImage(file="add_icon.png")
-        word_mappings_add_button = ttk.Button(
-            self.root,
+        Button(
+            button_frame,
             text="Add word mapping",
+            style="secondary.TButton",
             image=self.add_icon,
             compound=LEFT,
             command=self.add_word_mapping
-        )
-        word_mappings_add_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
-
-        self.reload_icon = PhotoImage(file="reload_icon.png")
-        word_mappings_reload_button = ttk.Button(
-            self.root,
-            text="Reload word mappings",
-            image=self.reload_icon,
-            compound=LEFT,
-            command=self.reload_word_mappings
-        )
-        word_mappings_reload_button.grid(row=1, column=0, sticky=E, pady=10, padx=10)
-
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_columnconfigure(0, weight=1)
+        ).pack(side=LEFT)
 
         self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
@@ -642,12 +633,6 @@ class WhisperAttack:
         """
         WhisperAttackWordMappings(self.root, self.whisper_server)
 
-    def reload_word_mappings(self) -> None:
-        """
-        Call the WhisperServer function to reload the word mappings.
-        """
-        self.whisper_server.load_word_mappings()
-
     def get_theme(self) -> str:
         """
         Returns the name of the theme to be used when displaying
@@ -679,7 +664,7 @@ class WhisperAttackWordMappings:
     """
     A class used to display a UI and handle the adding of new word mappings.
     """
-    def __init__(self, root: ttk.Window, whisper_server: WhisperServer):
+    def __init__(self, root: Window, whisper_server: WhisperServer):
         self.whisper_server = whisper_server
 
          # Center the modal over the parent window
@@ -692,7 +677,7 @@ class WhisperAttackWordMappings:
         x = parent_x + (parent_width // 2) - (modal_width // 2)
         y = parent_y + (parent_height // 2) - (modal_height // 2)
 
-        modal = ttk.Toplevel(
+        modal = Toplevel(
             title="Add word mapping",
             size=(800, 300),
             position=(x, y),
@@ -704,18 +689,18 @@ class WhisperAttackWordMappings:
         replacement = StringVar()
 
         custom_font = font.Font(family="GG Sans", size=11)
-        aliases_frame = ttk.Frame(modal)
+        aliases_frame = Frame(modal)
         aliases_frame.pack(pady=15, padx=10, fill="x")
-        ttk.Label(aliases_frame, text="Aliases").pack(side=LEFT, padx=5)
-        ttk.Entry(
+        Label(aliases_frame, text="Aliases").pack(side=LEFT, padx=5)
+        Entry(
             aliases_frame,
             textvariable=aliases,
             font=custom_font
         ).pack(side=LEFT, fill="x", expand=True, padx=5)
-        replacement_frame = ttk.Frame(modal)
+        replacement_frame = Frame(modal)
         replacement_frame.pack(pady=15, padx=10, fill="x")
-        ttk.Label(replacement_frame, text="Replacement").pack(side=LEFT, padx=5)
-        ttk.Entry(
+        Label(replacement_frame, text="Replacement").pack(side=LEFT, padx=5)
+        Entry(
             replacement_frame,
             textvariable=replacement,
             font=custom_font
@@ -725,15 +710,15 @@ class WhisperAttackWordMappings:
             self.whisper_server.add_word_mapping(aliases.get(), replacement.get())
             modal.destroy()
 
-        button_frame = ttk.Frame(modal)
+        button_frame = Frame(modal)
         button_frame.pack(pady=50, padx=10, fill="x")
-        ttk.Button(
+        Button(
             button_frame,
             text="Ok",
             style="primary.TButton",
             command=add_word_mapping
         ).pack(side=LEFT, padx=10)
-        ttk.Button(
+        Button(
             button_frame,
             text="Cancel",
             style="secondary.TButton",
@@ -772,7 +757,7 @@ class WhisperAttackWriter:
         for key, value in dictionary.items():
             self.write(f"{key}: {value}", tag)
 
-window = ttk.Window(title="WhisperAttack", iconphoto="whisper_attack_icon.png")
+window = Window(title="WhisperAttack", iconphoto="whisper_attack_icon.png")
 
 def shut_down(_icon) -> None:
     """
@@ -800,16 +785,16 @@ def open_modal(message: str) -> None:
     """
     Open a modal dialog to display messages.
     """
-    modal = ttk.Toplevel(
+    modal = Toplevel(
         title="WhisperAttack",
         size=(1000, 300),
         transient=window,
         topmost=True
     )
-    label = ttk.Label(modal, text=message)
+    label = Label(modal, text=message)
     label.pack(pady=20)
-    ttk.Style().configure('TButton', font=('GG Sans', 11))
-    close_button = ttk.Button(modal, text="Close", command=modal.destroy)
+    Style().configure('TButton', font=('GG Sans', 11))
+    close_button = Button(modal, text="Close", command=modal.destroy)
     close_button.pack(pady=10)
     modal.place_window_center()
     modal.grab_set()
