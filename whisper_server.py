@@ -10,7 +10,7 @@ import unicodedata
 import tempfile
 import re
 import traceback
-from tkinter import Button, Label, StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, NSEW
+from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, NSEW
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.constants import *
@@ -190,7 +190,7 @@ class WhisperServer:
 
         # Location to the VoiceAttack executable
         self.voiceattack = self.get_voiceattack(config)
-        
+
         # Will be loaded from text files:
         self.dcs_airports = []
         self.word_mappings = {}
@@ -289,7 +289,7 @@ class WhisperServer:
             self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
         return None
-    
+
     def add_word_mapping(self, aliases: str, replacement: str) -> None:
         """
         Adds a new alias and replacement to the word mappings
@@ -485,7 +485,7 @@ class WhisperServer:
         Starts a socket server and listens for incoming commands.
         """
         self.load_whisper_model(self.config)
-        
+
         logging.info("Server started and listening on %s:%s", HOST, PORT)
         self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -522,7 +522,6 @@ TAG_RED = 'red'
 THEME_DEFAULT = 'default'
 THEME_DARK = 'dark'
 THEME_LIGHT = 'light'
-
 theme_config = {
     THEME_DARK: {
         TAG_BLACK: 'light grey',
@@ -566,6 +565,9 @@ class WhisperAttack:
             self.root.style.theme_use("flatly")
 
         custom_font = font.Font(family="GG Sans", size=11)
+        ttk.Style().configure('TButton', font=custom_font)
+        ttk.Style().configure('TLabel', font=custom_font)
+
         text_area = ScrolledText(
             self.root,
             wrap=WORD,
@@ -578,25 +580,21 @@ class WhisperAttack:
         text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
 
         self.add_icon = PhotoImage(file="add_icon.png")
-        word_mappings_add_button = Button(
+        word_mappings_add_button = ttk.Button(
             self.root,
-            font=custom_font,
             text="Add word mapping",
             image=self.add_icon,
             compound=LEFT,
-            padx=5, pady=5,
             command=self.add_word_mapping
         )
         word_mappings_add_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
 
         self.reload_icon = PhotoImage(file="reload_icon.png")
-        word_mappings_reload_button = Button(
+        word_mappings_reload_button = ttk.Button(
             self.root,
-            font=custom_font,
             text="Reload word mappings",
             image=self.reload_icon,
             compound=LEFT,
-            padx=5, pady=5,
             command=self.reload_word_mappings
         )
         word_mappings_reload_button.grid(row=1, column=0, sticky=E, pady=10, padx=10)
@@ -705,14 +703,23 @@ class WhisperAttackWordMappings:
         aliases = StringVar()
         replacement = StringVar()
 
+        custom_font = font.Font(family="GG Sans", size=11)
         aliases_frame = ttk.Frame(modal)
         aliases_frame.pack(pady=15, padx=10, fill="x")
         ttk.Label(aliases_frame, text="Aliases").pack(side=LEFT, padx=5)
-        ttk.Entry(aliases_frame, textvariable=aliases).pack(side=LEFT, fill="x", expand=True, padx=5)
+        ttk.Entry(
+            aliases_frame,
+            textvariable=aliases,
+            font=custom_font
+        ).pack(side=LEFT, fill="x", expand=True, padx=5)
         replacement_frame = ttk.Frame(modal)
         replacement_frame.pack(pady=15, padx=10, fill="x")
         ttk.Label(replacement_frame, text="Replacement").pack(side=LEFT, padx=5)
-        ttk.Entry(replacement_frame, textvariable=replacement).pack(side=LEFT, fill="x", expand=True, padx=5)
+        ttk.Entry(
+            replacement_frame,
+            textvariable=replacement,
+            font=custom_font
+        ).pack(side=LEFT, fill="x", expand=True, padx=5)
 
         def add_word_mapping() -> None:
             self.whisper_server.add_word_mapping(aliases.get(), replacement.get())
@@ -720,8 +727,18 @@ class WhisperAttackWordMappings:
 
         button_frame = ttk.Frame(modal)
         button_frame.pack(pady=50, padx=10, fill="x")
-        ttk.Button(button_frame, text="Ok", style="primary.TButton", command=add_word_mapping).pack(side=LEFT, padx=10)
-        ttk.Button(button_frame, text="Cancel", style="secondary.TButton", command=modal.destroy).pack(side=LEFT, padx=10)
+        ttk.Button(
+            button_frame,
+            text="Ok",
+            style="primary.TButton",
+            command=add_word_mapping
+        ).pack(side=LEFT, padx=10)
+        ttk.Button(
+            button_frame,
+            text="Cancel",
+            style="secondary.TButton",
+            command=modal.destroy
+        ).pack(side=LEFT, padx=10)
 
 class WhisperAttackWriter:
     """
@@ -789,9 +806,10 @@ def open_modal(message: str) -> None:
         transient=window,
         topmost=True
     )
-    label = Label(modal, text=message)
+    label = ttk.Label(modal, text=message)
     label.pack(pady=20)
-    close_button = Button(modal, text="Close", command=modal.destroy)
+    ttk.Style().configure('TButton', font=('GG Sans', 11))
+    close_button = ttk.Button(modal, text="Close", command=modal.destroy)
     close_button.pack(pady=10)
     modal.place_window_center()
     modal.grab_set()
