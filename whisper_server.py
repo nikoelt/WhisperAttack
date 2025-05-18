@@ -9,8 +9,12 @@ import subprocess
 import unicodedata
 import tempfile
 import re
-from tkinter import Tk, scrolledtext, Button, Label, Entry, Toplevel, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, E, W, EW, NSEW
 import traceback
+from typing import Callable
+from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, W, NSEW
+from ttkbootstrap import Window, Toplevel, Button, Frame, Label, Entry, Style
+from ttkbootstrap.scrolled import ScrolledText
+from ttkbootstrap.constants import *
 import keyboard
 import sounddevice as sd
 import soundfile as sf
@@ -185,13 +189,12 @@ class WhisperServer:
         self.wave_file = None
         self.stream = None
 
-        # Will be loaded from text files:
-        self.dcs_airports = []
-        self.word_mappings = {}
-
         # Location to the VoiceAttack executable
         self.voiceattack = self.get_voiceattack(config)
 
+        # Will be loaded from text files:
+        self.dcs_airports = []
+        self.word_mappings = {}
         self.load_word_mappings()
         self.load_fuzzy_words()
 
@@ -287,7 +290,7 @@ class WhisperServer:
             self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
         return None
-    
+
     def add_word_mapping(self, aliases: str, replacement: str) -> None:
         """
         Adds a new alias and replacement to the word mappings
@@ -520,7 +523,6 @@ TAG_RED = 'red'
 THEME_DEFAULT = 'default'
 THEME_DARK = 'dark'
 THEME_LIGHT = 'light'
-
 theme_config = {
     THEME_DARK: {
         TAG_BLACK: 'light grey',
@@ -551,49 +553,43 @@ class WhisperAttack:
     """
     Class for the main WhisperAttack application.
     """
-    def __init__(self, root: Tk):
+    def __init__(self, root: Window):
         start_logging()
 
         self.config = self.load_configuration()
         self.root = root
-        self.root.title("WhisperAttack")
 
         theme = self.get_theme()
-        
+        if theme == THEME_DARK:
+            self.root.style.theme_use("darkly")
+        else:
+            self.root.style.theme_use("flatly")
+
         custom_font = font.Font(family="GG Sans", size=11)
-        text_area = scrolledtext.ScrolledText(
+        Style().configure('TButton', font=custom_font)
+        Style().configure('TLabel', font=custom_font)
+
+        text_area = ScrolledText(
             self.root,
             wrap=WORD,
             width=100,
             height=50,
-            state=DISABLED
+            state=DISABLED,
+            autohide=True,
+            font=custom_font
         )
         text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
-        text_area.configure(bg=theme_config[theme]['background'], font=custom_font)
 
         self.add_icon = PhotoImage(file="add_icon.png")
-        word_mappings_add_button = Button(
+        add_word_mapping_button = Button(
             self.root,
-            font=custom_font,
             text="Add word mapping",
+            style="secondary.TButton",
             image=self.add_icon,
             compound=LEFT,
-            padx=5, pady=5,
             command=self.add_word_mapping
         )
-        word_mappings_add_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
-
-        self.reload_icon = PhotoImage(file="reload_icon.png")
-        word_mappings_reload_button = Button(
-            self.root,
-            font=custom_font,
-            text="Reload word mappings",
-            image=self.reload_icon,
-            compound=LEFT,
-            padx=5, pady=5,
-            command=self.reload_word_mappings
-        )
-        word_mappings_reload_button.grid(row=1, column=0, sticky=E, pady=10, padx=10)
+        add_word_mapping_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
 
         root.grid_rowconfigure(0, weight=1)
         root.grid_columnconfigure(0, weight=1)
@@ -631,15 +627,12 @@ class WhisperAttack:
 
         logging.info("Loaded configuration: %s", config)
         return config
-    
+
     def add_word_mapping(self) -> None:
-        WhisperAttackWordMappings(self.root, self.whisper_server, self.writer)
-    
-    def reload_word_mappings(self) -> None:
         """
-        Call the WhisperServer function to reload the word mappings.
+        Open the configuration dialog to add word mappings
         """
-        self.whisper_server.load_word_mappings()
+        WhisperAttackWordMappings(self.root, self.whisper_server.add_word_mapping)
 
     def get_theme(self) -> str:
         """
@@ -668,11 +661,76 @@ class WhisperAttack:
         open_modal(f"Unexpected server error: {args.exc_value}")
         shut_down(icon)
 
+class WhisperAttackWordMappings:
+    """
+    A class used to display a UI and handle the adding of new word mappings.
+    """
+    def __init__(self, root: Window, add_work_mapping: Callable[[str, str], None]):
+        self.add_word_mapping = add_work_mapping
+
+         # Center the modal over the parent window
+        modal_width = 800
+        modal_height = 300
+        parent_x = root.winfo_x()
+        parent_y = root.winfo_y()
+        parent_width = root.winfo_width()
+        parent_height = root.winfo_height()
+        x = parent_x + (parent_width // 2) - (modal_width // 2)
+        y = parent_y + (parent_height // 2) - (modal_height // 2)
+
+        modal = Toplevel(
+            title="Add word mapping",
+            size=(800, 300),
+            position=(x, y),
+            transient=root
+        )
+        modal.grab_set()
+
+        aliases = StringVar()
+        replacement = StringVar()
+
+        custom_font = font.Font(family="GG Sans", size=11)
+        aliases_frame = Frame(modal)
+        aliases_frame.pack(pady=15, padx=10, fill="x")
+        Label(aliases_frame, text="Aliases").pack(side=LEFT, padx=5)
+        Entry(
+            aliases_frame,
+            textvariable=aliases,
+            font=custom_font
+        ).pack(side=LEFT, fill="x", expand=True, padx=5)
+        replacement_frame = Frame(modal)
+        replacement_frame.pack(pady=15, padx=10, fill="x")
+        Label(replacement_frame, text="Replacement").pack(side=LEFT, padx=5)
+        Entry(
+            replacement_frame,
+            textvariable=replacement,
+            font=custom_font
+        ).pack(side=LEFT, fill="x", expand=True, padx=5)
+
+        def add_new_word_mapping() -> None:
+            self.add_word_mapping(aliases.get(), replacement.get())
+            modal.destroy()
+
+        button_frame = Frame(modal)
+        button_frame.pack(pady=50, padx=10, fill="x")
+        Button(
+            button_frame,
+            text="Ok",
+            style="primary.TButton",
+            command=add_new_word_mapping
+        ).pack(side=LEFT, padx=10)
+        Button(
+            button_frame,
+            text="Cancel",
+            style="secondary.TButton",
+            command=modal.destroy
+        ).pack(side=LEFT, padx=10)
+
 class WhisperAttackWriter:
     """
     A class used to write to the text area within the WhisperAttack window.
     """
-    def __init__(self, theme: str, text_area: scrolledtext.ScrolledText):
+    def __init__(self, theme: str, text_area: ScrolledText):
         self.text_area = text_area
         style = theme_config[theme]
         self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
@@ -688,10 +746,10 @@ class WhisperAttackWriter:
         This sets the state to NORMAL so that it is writable then
         sets to DISABLED afterwards so that the text area is readonly
         """
-        self.text_area.config(state=NORMAL)
+        self.text_area.text.configure(state=NORMAL)
         self.text_area.insert(END, text + "\n", tag)
         self.text_area.see(END)
-        self.text_area.config(state=DISABLED)
+        self.text_area.text.configure(state=DISABLED)
 
     def write_dict(self, dictionary: dict[str, str], tag = TAG_BLACK) -> None:
         """
@@ -700,47 +758,7 @@ class WhisperAttackWriter:
         for key, value in dictionary.items():
             self.write(f"{key}: {value}", tag)
 
-class WhisperAttackWordMappings:
-    """
-    A class used to display a UI and handle the adding of new word mappings.
-    """
-    def __init__(self, root: Tk, whisper_server: WhisperServer, writer: WhisperAttackWriter):
-        self.whisper_server = whisper_server
-        self.writer = writer
-
-        modal = Toplevel(root)
-        modal.title = "Add word mapping"
-        modal_width = 400
-        modal_height = 120
-        modal.geometry(f"{modal_width}x{modal_height}")
-        modal.transient(root)
-        modal.grab_set()
-        # Center the modal over the parent window
-        parent_x = root.winfo_x()
-        parent_y = root.winfo_y()
-        parent_width = root.winfo_width()
-        parent_height = root.winfo_height()
-        x = parent_x + (parent_width // 2) - (modal_width // 2)
-        y = parent_y + (parent_height // 2) - (modal_height // 2)
-        modal.geometry(f"{modal_width}x{modal_height}+{x}+{y}")
-
-        Label(modal, text="Aliases").grid(row=0, sticky=E, padx=5)
-        Label(modal, text="Replacement").grid(row=1, sticky=E, padx=5)
-
-        modal.columnconfigure(1, weight=1)
-        aliases_entry = Entry(modal)
-        replacement_entry = Entry(modal)
-        aliases_entry.grid(row=0, column=1, sticky=EW, padx=10, pady=10)
-        replacement_entry.grid(row=1, column=1, sticky=EW, padx=10, pady=10)
-
-        def add_word_mapping() -> None:
-            aliases = aliases_entry.get()
-            replacement = replacement_entry.get()
-            self.whisper_server.add_word_mapping(aliases,replacement)
-            modal.destroy()
-
-        Button(modal, text="Cancel", command=modal.destroy).grid(row=3, column=0, sticky=W, padx=10, pady=5)
-        Button(modal, text="Ok", command=add_word_mapping).grid(row=3, column=1, sticky=E, padx=10, pady=5)
+window = Window(title="WhisperAttack", iconphoto="whisper_attack_icon.png")
 
 def shut_down(_icon) -> None:
     """
@@ -768,19 +786,21 @@ def open_modal(message: str) -> None:
     """
     Open a modal dialog to display messages.
     """
-    modal = Toplevel(window)
-    modal.title("WhisperAttack")
-    modal.geometry("800x300")
+    modal = Toplevel(
+        title="WhisperAttack",
+        size=(1000, 300),
+        transient=window,
+        topmost=True
+    )
     label = Label(modal, text=message)
     label.pack(pady=20)
+    Style().configure('TButton', font=('GG Sans', 11))
     close_button = Button(modal, text="Close", command=modal.destroy)
     close_button.pack(pady=10)
-    modal.transient(window)
+    modal.place_window_center()
     modal.grab_set()
     window.wait_window(modal)
 
-# The WhisperAttack window
-window = Tk()
 window.protocol('WM_DELETE_WINDOW', withdraw_window)
 
 # The Whisper system tray icon
