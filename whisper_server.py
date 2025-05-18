@@ -11,7 +11,7 @@ import tempfile
 import re
 import traceback
 from typing import Callable
-from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
+from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, W, NSEW
 from ttkbootstrap import Window, Toplevel, Button, Frame, Label, Entry, Style
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.constants import *
@@ -569,10 +569,8 @@ class WhisperAttack:
         Style().configure('TButton', font=custom_font)
         Style().configure('TLabel', font=custom_font)
 
-        text_area_frame = Frame(self.root)
-        text_area_frame.pack(padx=10, pady=10, fill="x")
         text_area = ScrolledText(
-            text_area_frame,
+            self.root,
             wrap=WORD,
             width=100,
             height=50,
@@ -580,19 +578,21 @@ class WhisperAttack:
             autohide=True,
             font=custom_font
         )
-        text_area.pack(fill="x", expand=True)
+        text_area.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
 
-        button_frame = Frame(self.root)
-        button_frame.pack(padx=10, pady=10, fill="x")
         self.add_icon = PhotoImage(file="add_icon.png")
-        Button(
-            button_frame,
+        add_word_mapping_button = Button(
+            self.root,
             text="Add word mapping",
             style="secondary.TButton",
             image=self.add_icon,
             compound=LEFT,
             command=self.add_word_mapping
-        ).pack(side=LEFT)
+        )
+        add_word_mapping_button.grid(row=1, column=0, sticky=W, pady=10, padx=10)
+
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
 
         self.writer = WhisperAttackWriter(theme, text_area)
         self.writer.write("Loaded configuration:", TAG_BLUE)
