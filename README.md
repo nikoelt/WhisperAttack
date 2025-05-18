@@ -182,9 +182,9 @@ Assign the same joystick button but check **"Shortcut is invoked only when relea
 ---
 ## Adding new word mappings
 
-Word mappings can be added to WhisperAttack so that these aliases are replaced with the configured replacement in the transcribed sentences.
+Word mappings can be added to WhisperAttack so that when these words are found within transcribed sentences they will be replaced with the replacement word you provide. This can aid with replacing words that are consistently transcribed incorrectly into the word you actually want.
 
-Click the "Add word mapping" button to open this configuration. Multiple aliases can be entered, separated by semicolons, for a single replacement.
+Click the Add word mapping button to open this configuration screen. Multiple aliases can be entered, separated by semicolons, for a single replacement.
 
 ![whisperattack_addwordmapping](./screenshots/WhisperAttack%20add%20new%20word%20mapping.png)
 
