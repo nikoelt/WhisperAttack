@@ -82,6 +82,8 @@ gulf;gold=Golf
 inter=Inter
 ```
 
+WhisperAttack needs to be restarted after making changes to this file. New word mappings can be added via the configuration screen and do not require a restart.
+
 ---
 
 ## Running the Whisper Server
@@ -176,6 +178,15 @@ Stop Whisper Recording
 Assign the same joystick button but check **"Shortcut is invoked only when released."**
 
 ![Whisperattackreadme1](https://github.com/user-attachments/assets/9c84d4f8-00c0-4525-8cda-0c0ddda24298)
+
+---
+## Adding new word mappings
+
+Word mappings can be added to WhisperAttack so that these aliases are replaced with the configured replacement in the transcribed sentences.
+
+Click the "Add word mapping" button to open this configuration. Multiple aliases can be entered, separated by semicolons, for a single replacement.
+
+![whisperattack_addwordmapping](./screenshots/WhisperAttack%20add%20new%20word%20mapping.png)
 
 ---
 ## Clipboard & DCS Kneeboard Integration - Optional
