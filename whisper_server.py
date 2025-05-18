@@ -10,6 +10,7 @@ import unicodedata
 import tempfile
 import re
 import traceback
+from typing import Callable
 from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD
 from ttkbootstrap import Window, Toplevel, Button, Frame, Label, Entry, Style
 from ttkbootstrap.scrolled import ScrolledText
@@ -631,7 +632,7 @@ class WhisperAttack:
         """
         Open the configuration dialog to add word mappings
         """
-        WhisperAttackWordMappings(self.root, self.whisper_server)
+        WhisperAttackWordMappings(self.root, self.whisper_server.add_word_mapping)
 
     def get_theme(self) -> str:
         """
@@ -664,8 +665,8 @@ class WhisperAttackWordMappings:
     """
     A class used to display a UI and handle the adding of new word mappings.
     """
-    def __init__(self, root: Window, whisper_server: WhisperServer):
-        self.whisper_server = whisper_server
+    def __init__(self, root: Window, add_work_mapping: Callable[[str, str], None]):
+        self.add_word_mapping = add_work_mapping
 
          # Center the modal over the parent window
         modal_width = 800
@@ -706,8 +707,8 @@ class WhisperAttackWordMappings:
             font=custom_font
         ).pack(side=LEFT, fill="x", expand=True, padx=5)
 
-        def add_word_mapping() -> None:
-            self.whisper_server.add_word_mapping(aliases.get(), replacement.get())
+        def add_new_word_mapping() -> None:
+            self.add_word_mapping(aliases.get(), replacement.get())
             modal.destroy()
 
         button_frame = Frame(modal)
@@ -716,7 +717,7 @@ class WhisperAttackWordMappings:
             button_frame,
             text="Ok",
             style="primary.TButton",
-            command=add_word_mapping
+            command=add_new_word_mapping
         ).pack(side=LEFT, padx=10)
         Button(
             button_frame,
