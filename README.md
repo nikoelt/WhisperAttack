@@ -45,15 +45,11 @@ A VoiceAttack profile for Whisper VAICOM integration is available in this reposi
   - Whisper runs faster on an NVIDIA GPU with CUDA.
   - When using GPU if CUDA is not available then an error will be logged and this will fallback to CPU
 
-- **CUDA 12**
-  - WhisperAttack requires the CUDA 12 runtime. This is included with WhisperAttack however if you get a "Library cublas64_12.dll is not found" error then you will need to install the CUDA Toolkit 12. Only the Runtime > Libraries need to be installed if presented with a list of components to install.
-  - The [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads) will install the CUDA 12 libraries
-
 ---
 
 ## Installation
 
-1. Download the latest release [WhisperAttack v1.1.1.zip file from the Google drive](https://drive.google.com/drive/folders/1B16V84xWMEAWuW48pd9yUdRn3JCynqHt?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. Download the latest release [WhisperAttack v1.2.0.zip file from the Google drive](https://drive.google.com/drive/folders/1FVzbkNPFoeAnuNfpr_ZCUOOrDVRkiV_a?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
 1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
@@ -70,6 +66,10 @@ The default values should cover most cases but can be changed:
   - A smaller size can be specified for reducing the amount of VRAM used, e.g. `base.en` or `tiny.en`
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
 - `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location.
+- `theme` - To display the WhisperAttack UI in light or dark mode. Valid values: 
+  - `default` - this will use the current theme you have set for Windows
+  - `dark` - dark mode
+  - `light` - light mode
 
 ### word_mappings.txt
 
@@ -205,7 +205,7 @@ Once completed, you must say "Note" followed by what you would like to transcrib
 
 ## Troubleshooting
 
-### Library cublas64_12.dll is not found`
+### Library cublas64_12.dll is not found
 
 If the below below is displayed in the logs then ensure that CUDA 12 is available, e.g. by installing the [CUDA Toolkit 12](https://developer.nvidia.com/cuda-downloads)
 
