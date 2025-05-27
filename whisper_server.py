@@ -10,7 +10,7 @@ import unicodedata
 import tempfile
 import re
 import traceback
-from tkinter import PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, W, NSEW
+from tkinter import PhotoImage, font, LEFT, DISABLED, WORD, W, NSEW
 import darkdetect
 import keyboard
 import sounddevice as sd
@@ -25,6 +25,8 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image
 from pid import PidFile, PidFileError
 from word_mappings import WhisperAttackWordMappings
+from writer import WhisperAttackWriter
+from theme import THEME_DEFAULT, THEME_DARK, TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
 
 ###############################################################################
 # CONFIG
@@ -513,37 +515,6 @@ class WhisperServer:
         logging.info("Server has shut down cleanly.")
         self.writer.write("Server has shut down cleanly.")
 
-TAG_BLACK = 'black'
-TAG_BLUE = 'blue'
-TAG_GREEN = 'green'
-TAG_GREY = 'grey'
-TAG_ORANGE = 'orange'
-TAG_RED = 'red'
-
-THEME_DEFAULT = 'default'
-THEME_DARK = 'dark'
-THEME_LIGHT = 'light'
-theme_config = {
-    THEME_DARK: {
-        TAG_BLACK: 'light grey',
-        TAG_BLUE: '#7289DA',
-        TAG_GREEN: '#4E9D4E',
-        TAG_GREY: 'grey',
-        TAG_ORANGE: '#FF981F',
-        TAG_RED: '#F04747',
-        'background': '#36393E'
-    },
-    THEME_LIGHT: {
-        TAG_BLACK: 'black',
-        TAG_BLUE: 'blue',
-        TAG_GREEN: 'green',
-        TAG_GREY: 'grey',
-        TAG_ORANGE: 'orange',
-        TAG_RED: 'red',
-        'background': 'white'
-    }
-}
-
 class ConfigurationError(Exception):
     """
     Basic exception class for errors loading configuration
@@ -660,38 +631,6 @@ class WhisperAttack:
         logging.error("Server error: %s\n\n%s", args.exc_value, trace)
         open_modal(f"Unexpected server error: {args.exc_value}")
         shut_down(icon)
-
-class WhisperAttackWriter:
-    """
-    A class used to write to the text area within the WhisperAttack window.
-    """
-    def __init__(self, theme: str, text_area: ScrolledText):
-        self.text_area = text_area
-        style = theme_config[theme]
-        self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
-        self.text_area.tag_configure(TAG_BLUE, foreground=style[TAG_BLUE])
-        self.text_area.tag_configure(TAG_GREEN, foreground=style[TAG_GREEN])
-        self.text_area.tag_configure(TAG_GREY, foreground=style[TAG_GREY])
-        self.text_area.tag_configure(TAG_ORANGE, foreground=style[TAG_ORANGE])
-        self.text_area.tag_configure(TAG_RED, foreground=style[TAG_RED])
-
-    def write(self, text: str, tag = TAG_BLACK) -> None:
-        """
-        Write a line to the text area.
-        This sets the state to NORMAL so that it is writable then
-        sets to DISABLED afterwards so that the text area is readonly
-        """
-        self.text_area.text.configure(state=NORMAL)
-        self.text_area.insert(END, text + "\n", tag)
-        self.text_area.see(END)
-        self.text_area.text.configure(state=DISABLED)
-
-    def write_dict(self, dictionary: dict[str, str], tag = TAG_BLACK) -> None:
-        """
-        Write the dictionary as a formatted set of keys and values.
-        """
-        for key, value in dictionary.items():
-            self.write(f"{key}: {value}", tag)
 
 window = Window(title="WhisperAttack", iconphoto="whisper_attack_icon.png")
 
