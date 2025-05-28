@@ -10,32 +10,30 @@ import unicodedata
 import tempfile
 import re
 import traceback
-from typing import Callable
-from tkinter import StringVar, PhotoImage, font, LEFT, NORMAL, DISABLED, END, WORD, W, NSEW
-from ttkbootstrap import Window, Toplevel, Button, Frame, Label, Entry, Style
-from ttkbootstrap.scrolled import ScrolledText
-from ttkbootstrap.constants import *
+from tkinter import PhotoImage, font, LEFT, DISABLED, WORD, W, NSEW
+import darkdetect
 import keyboard
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
+from ttkbootstrap import Window, Toplevel, Button, Label, Style
+from ttkbootstrap.scrolled import ScrolledText
+from ttkbootstrap.constants import *
 from rapidfuzz import process
 from text2digits import text2digits
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
 from pid import PidFile, PidFileError
-import darkdetect
+from word_mappings import WhisperAttackWordMappings
+from configuration import WhisperAttackConfiguration
+from writer import WhisperAttackWriter
+from theme import THEME_DEFAULT, THEME_DARK, TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
 
 ###############################################################################
 # CONFIG
 ###############################################################################
 HOST = '127.0.0.1'
 PORT = 65432
-
-# Text-file paths for configuration, word mappings, and fuzzy words
-CONFIGURATION_SETTINGS_FILE = "settings.cfg"
-FUZZY_WORDS_TEXT_FILE = "fuzzy_words.txt"
-WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
@@ -180,7 +178,7 @@ class WhisperServer:
     Once recording has stopped the audio will be transcribed to text and
     sent to either VoiceAttack or the DCS kneeboard.
     """
-    def __init__(self, config: dict[str, str], writer):
+    def __init__(self, config: WhisperAttackConfiguration, writer: WhisperAttackWriter):
         self.config = config
         self.writer = writer
         self.model = None
@@ -189,81 +187,15 @@ class WhisperServer:
         self.wave_file = None
         self.stream = None
 
-        # Location to the VoiceAttack executable
-        self.voiceattack = self.get_voiceattack(config)
+        self.voiceattack = self.config.get_voiceattack()
 
-        # Will be loaded from text files:
-        self.dcs_airports = []
-        self.word_mappings = {}
-        self.load_word_mappings()
-        self.load_fuzzy_words()
-
-    def get_voiceattack(self, config) -> str | None:
-        """
-        Returns the path to the VoiceAttack executable after validating
-        that it is present at the location specified in the configuration.
-        """
-        voiceattack_location = config.get("voiceattack_location", "")
-        if os.path.isfile(voiceattack_location):
-            return voiceattack_location
-        logging.error("VoiceAttack could not be located at: '%s'", voiceattack_location)
-        self.writer.write(f"VoiceAttack could not be located at: '{voiceattack_location}'", TAG_RED)
-        return None
-
-    def load_word_mappings(self) -> None:
-        """
-        Loads word mappings from text files.
-        """
-        self.word_mappings = {}
-        if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
-            try:
-                with open(WORD_MAPPINGS_TEXT_FILE, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        parts = line.split('=', maxsplit=1)
-                        if len(parts) == 2:
-                            aliases, target = parts
-                            target = target.strip()
-                            list(map(lambda alias: self.word_mappings.update({ alias: target }), aliases.split(';')))
-                logging.info("Loaded word mappings: %s", self.word_mappings)
-                self.writer.write("Loaded word mappings:", TAG_BLUE)
-                self.writer.write_dict(self.word_mappings, TAG_GREY)
-            except Exception as e:
-                logging.error("Failed to load word mappings from %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
-                self.writer.write(f"Failed to load word mappings from {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
-        else:
-            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
-            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
-
-    def load_fuzzy_words(self) -> None:
-        """
-        Loads fuzzy words from text files.
-        """
-        if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
-            try:
-                with open(FUZZY_WORDS_TEXT_FILE, 'r', encoding='utf-8') as f:
-                    self.dcs_airports = [
-                        line.strip() for line in f
-                        if line.strip() and not line.strip().startswith('#')
-                    ]
-                self.writer.write("Loaded fuzzy words:", TAG_BLUE)
-                self.writer.write(f"{self.dcs_airports}", TAG_GREY)
-            except Exception as e:
-                logging.error("Failed to load fuzzy words from %s: %s", FUZZY_WORDS_TEXT_FILE, e)
-                self.writer.write(f"Failed to load fuzzy words from {FUZZY_WORDS_TEXT_FILE}: {e}", TAG_RED)
-        else:
-            logging.warning("%s not found; fuzzy matching list is empty.", FUZZY_WORDS_TEXT_FILE)
-            self.writer.write(f"{FUZZY_WORDS_TEXT_FILE} not found; fuzzy matching list is empty.", TAG_ORANGE)
-
-    def load_whisper_model(self, config) -> None:
+    def load_whisper_model(self, config: WhisperAttackConfiguration) -> None:
         """
         Loads the Whisper model.
         """
-        whisper_model = config.get("whisper_model", "small.en")
-        whisper_device = config.get("whisper_device", "CPU")
-        whisper_core_type = config.get("whisper_core_type", "tensor")
+        whisper_model = config.get_whisper_model()
+        whisper_device = config.get_whisper_device()
+        whisper_core_type = config.get_whisper_core_type()
         logging.info("Loading Whisper model (%s), device=%s, core_type=%s ...", whisper_model, whisper_device, whisper_core_type)
         self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
         import torch
@@ -290,30 +222,6 @@ class WhisperServer:
             self.writer.write("cuda not available so using CPU", TAG_RED)
         self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
         return None
-
-    def add_word_mapping(self, aliases: str, replacement: str) -> None:
-        """
-        Adds a new alias and replacement to the word mappings
-        """
-        if aliases.strip() == "":
-            return None
-
-        list(map(lambda alias: self.word_mappings.update({ alias: replacement }), aliases.split(';')))
-        if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
-            try:
-                with open(WORD_MAPPINGS_TEXT_FILE, 'a', encoding='utf-8') as f:
-                    f.write(f"\n{aliases}={replacement}")
-                    f.close()
-                logging.info("Added aliases: %s", aliases)
-                logging.info("Added replacement: %s", replacement)
-                self.writer.write("Added new word mapping", TAG_BLUE)
-                self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
-            except Exception as e:
-                logging.error("Failed to add new word mapping to %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
-                self.writer.write(f"Failed to add new word mapping to {WORD_MAPPINGS_TEXT_FILE}: {e}", TAG_RED)
-        else:
-            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
-            self.writer.write(f"{WORD_MAPPINGS_TEXT_FILE} not found; no custom word mappings loaded.", TAG_ORANGE)
 
     def start_recording(self) -> None:
         """
@@ -415,10 +323,10 @@ class WhisperServer:
             # Ignore blank audio as nothing has been recorded
             if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
                 return None
-            cleaned_text = custom_cleanup_text(raw_text, self.word_mappings)
+            cleaned_text = custom_cleanup_text(raw_text, self.config.get_word_mappings())
             fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
                 cleaned_text,
-                self.dcs_airports,
+                self.config.get_fuzzy_words(),
                 phonetic_alphabet,
                 dcs_threshold=85,
                 phonetic_threshold=85
@@ -513,42 +421,6 @@ class WhisperServer:
         logging.info("Server has shut down cleanly.")
         self.writer.write("Server has shut down cleanly.")
 
-TAG_BLACK = 'black'
-TAG_BLUE = 'blue'
-TAG_GREEN = 'green'
-TAG_GREY = 'grey'
-TAG_ORANGE = 'orange'
-TAG_RED = 'red'
-
-THEME_DEFAULT = 'default'
-THEME_DARK = 'dark'
-THEME_LIGHT = 'light'
-theme_config = {
-    THEME_DARK: {
-        TAG_BLACK: 'light grey',
-        TAG_BLUE: '#7289DA',
-        TAG_GREEN: '#4E9D4E',
-        TAG_GREY: 'grey',
-        TAG_ORANGE: '#FF981F',
-        TAG_RED: '#F04747',
-        'background': '#36393E'
-    },
-    THEME_LIGHT: {
-        TAG_BLACK: 'black',
-        TAG_BLUE: 'blue',
-        TAG_GREEN: 'green',
-        TAG_GREY: 'grey',
-        TAG_ORANGE: 'orange',
-        TAG_RED: 'red',
-        'background': 'white'
-    }
-}
-
-class ConfigurationError(Exception):
-    """
-    Basic exception class for errors loading configuration
-    """
-
 class WhisperAttack:
     """
     Class for the main WhisperAttack application.
@@ -556,7 +428,7 @@ class WhisperAttack:
     def __init__(self, root: Window):
         start_logging()
 
-        self.config = self.load_configuration()
+        self.config = WhisperAttackConfiguration()
         self.root = root
 
         theme = self.get_theme()
@@ -595,44 +467,28 @@ class WhisperAttack:
         root.grid_columnconfigure(0, weight=1)
 
         self.writer = WhisperAttackWriter(theme, text_area)
+
         self.writer.write("Loaded configuration:", TAG_BLUE)
-        self.writer.write_dict(self.config, TAG_GREY)
+        self.writer.write_dict(self.config.get_configuration(), TAG_GREY)
+        self.writer.write("Loaded word mappings:", TAG_BLUE)
+        self.writer.write_dict(self.config.get_word_mappings(), TAG_GREY)
+        self.writer.write("Loaded fuzzy words:", TAG_BLUE)
+        self.writer.write(f"{self.config.get_fuzzy_words()}", TAG_GREY)
 
         self.whisper_server = WhisperServer(self.config, self.writer)
 
         threading.excepthook = self.handle_exception
         threading.Thread(daemon=True, target=lambda: icon.run(setup=self.startup)).start()
 
-    def load_configuration(self) -> dict[str, str]:
-        """
-        Loads configuration settings.
-        """
-        config = {}
-        if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
-            try:
-                with open(CONFIGURATION_SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        parts = line.split('=', maxsplit=1)
-                        if len(parts) == 2:
-                            source, target = parts
-                            config[source.strip()] = target.strip()
-            except Exception as e:
-                logging.error("Failed to load configuration settings from %s: %s", CONFIGURATION_SETTINGS_FILE, e)
-                self.writer.write(f"Failed to load configuration settings from {CONFIGURATION_SETTINGS_FILE}: {e}", TAG_RED)
-        else:
-            raise ConfigurationError("The configuration settings.cfg file could not be found")
-
-        logging.info("Loaded configuration: %s", config)
-        return config
-
     def add_word_mapping(self) -> None:
         """
         Open the configuration dialog to add word mappings
         """
-        WhisperAttackWordMappings(self.root, self.whisper_server.add_word_mapping)
+        def update_word_mapping(aliases: str, replacement: str):
+            self.config.add_word_mapping(aliases, replacement)
+            self.writer.write("Added new word mapping:", TAG_BLUE)
+            self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
+        WhisperAttackWordMappings(self.root, update_word_mapping)
 
     def get_theme(self) -> str:
         """
@@ -640,7 +496,7 @@ class WhisperAttack:
         UI elements. When the configuration is set to "default" then
         the name returned will be the current Windows theme.
         """
-        theme = self.config.get("theme", THEME_DEFAULT)
+        theme = self.config.get_theme()
         if theme == THEME_DEFAULT:
             return darkdetect.theme().lower()
         return theme
@@ -660,103 +516,6 @@ class WhisperAttack:
         logging.error("Server error: %s\n\n%s", args.exc_value, trace)
         open_modal(f"Unexpected server error: {args.exc_value}")
         shut_down(icon)
-
-class WhisperAttackWordMappings:
-    """
-    A class used to display a UI and handle the adding of new word mappings.
-    """
-    def __init__(self, root: Window, add_work_mapping: Callable[[str, str], None]):
-        self.add_word_mapping = add_work_mapping
-
-         # Center the modal over the parent window
-        modal_width = 800
-        modal_height = 300
-        parent_x = root.winfo_x()
-        parent_y = root.winfo_y()
-        parent_width = root.winfo_width()
-        parent_height = root.winfo_height()
-        x = parent_x + (parent_width // 2) - (modal_width // 2)
-        y = parent_y + (parent_height // 2) - (modal_height // 2)
-
-        modal = Toplevel(
-            title="Add word mapping",
-            size=(800, 300),
-            position=(x, y),
-            transient=root
-        )
-        modal.grab_set()
-
-        aliases = StringVar()
-        replacement = StringVar()
-
-        custom_font = font.Font(family="GG Sans", size=11)
-        aliases_frame = Frame(modal)
-        aliases_frame.pack(pady=15, padx=10, fill="x")
-        Label(aliases_frame, text="Aliases").pack(side=LEFT, padx=5)
-        Entry(
-            aliases_frame,
-            textvariable=aliases,
-            font=custom_font
-        ).pack(side=LEFT, fill="x", expand=True, padx=5)
-        replacement_frame = Frame(modal)
-        replacement_frame.pack(pady=15, padx=10, fill="x")
-        Label(replacement_frame, text="Replacement").pack(side=LEFT, padx=5)
-        Entry(
-            replacement_frame,
-            textvariable=replacement,
-            font=custom_font
-        ).pack(side=LEFT, fill="x", expand=True, padx=5)
-
-        def add_new_word_mapping() -> None:
-            self.add_word_mapping(aliases.get(), replacement.get())
-            modal.destroy()
-
-        button_frame = Frame(modal)
-        button_frame.pack(pady=50, padx=10, fill="x")
-        Button(
-            button_frame,
-            text="Ok",
-            style="primary.TButton",
-            command=add_new_word_mapping
-        ).pack(side=LEFT, padx=10)
-        Button(
-            button_frame,
-            text="Cancel",
-            style="secondary.TButton",
-            command=modal.destroy
-        ).pack(side=LEFT, padx=10)
-
-class WhisperAttackWriter:
-    """
-    A class used to write to the text area within the WhisperAttack window.
-    """
-    def __init__(self, theme: str, text_area: ScrolledText):
-        self.text_area = text_area
-        style = theme_config[theme]
-        self.text_area.tag_configure(TAG_BLACK, foreground=style[TAG_BLACK])
-        self.text_area.tag_configure(TAG_BLUE, foreground=style[TAG_BLUE])
-        self.text_area.tag_configure(TAG_GREEN, foreground=style[TAG_GREEN])
-        self.text_area.tag_configure(TAG_GREY, foreground=style[TAG_GREY])
-        self.text_area.tag_configure(TAG_ORANGE, foreground=style[TAG_ORANGE])
-        self.text_area.tag_configure(TAG_RED, foreground=style[TAG_RED])
-
-    def write(self, text: str, tag = TAG_BLACK) -> None:
-        """
-        Write a line to the text area.
-        This sets the state to NORMAL so that it is writable then
-        sets to DISABLED afterwards so that the text area is readonly
-        """
-        self.text_area.text.configure(state=NORMAL)
-        self.text_area.insert(END, text + "\n", tag)
-        self.text_area.see(END)
-        self.text_area.text.configure(state=DISABLED)
-
-    def write_dict(self, dictionary: dict[str, str], tag = TAG_BLACK) -> None:
-        """
-        Write the dictionary as a formatted set of keys and values.
-        """
-        for key, value in dictionary.items():
-            self.write(f"{key}: {value}", tag)
 
 window = Window(title="WhisperAttack", iconphoto="whisper_attack_icon.png")
 
