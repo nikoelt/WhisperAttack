@@ -12,8 +12,8 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.constants import *
 from PIL import Image
 from pid import PidFile, PidFileError
-from configuration import WhisperAttackConfiguration
-from theme import THEME_DEFAULT, THEME_DARK, TAG_BLUE, TAG_GREY
+from configuration import WhisperAttackConfiguration, ConfigurationError
+from theme import THEME_DEFAULT, THEME_DARK, TAG_BLUE, TAG_GREY, TAG_RED
 from writer import WhisperAttackWriter
 from whisper_server import WhisperServer
 from word_mappings import WhisperAttackWordMappings
@@ -68,8 +68,9 @@ class WhisperAttack:
     def __init__(self, root: Window):
         start_logging()
 
-        self.config = WhisperAttackConfiguration()
         self.root = root
+
+        self.config = WhisperAttackConfiguration()
 
         theme = self.get_theme()
         if theme == THEME_DARK:
@@ -132,9 +133,12 @@ class WhisperAttack:
         Open the configuration dialog to add word mappings
         """
         def update_word_mapping(aliases: str, replacement: str):
-            self.config.add_word_mapping(aliases, replacement)
-            self.writer.write("Added new word mapping:", TAG_BLUE)
-            self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
+            try:
+                self.config.add_word_mapping(aliases, replacement)
+                self.writer.write("Added new word mapping:", TAG_BLUE)
+                self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
+            except ConfigurationError as error:
+                self.writer.write(error, TAG_RED)
         WhisperAttackWordMappings(self.root, update_word_mapping)
 
     def get_theme(self) -> str:

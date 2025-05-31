@@ -9,7 +9,12 @@ WORD_MAPPINGS_TEXT_FILE = "word_mappings.txt"
 
 class ConfigurationError(Exception):
     """
-    Basic exception class for errors loading configuration
+    Exception class for errors reading and writing configuration
+    """
+
+class ConfigurationWarning(Exception):
+    """
+    Warning class for errors reading configuration
     """
 
 class WhisperAttackConfiguration:
@@ -25,6 +30,7 @@ class WhisperAttackConfiguration:
         """
         Loads configuration settings.
         """
+        logging.info("Loading configuration...")
         config = {}
         if os.path.isfile(CONFIGURATION_SETTINGS_FILE):
             try:
@@ -37,8 +43,9 @@ class WhisperAttackConfiguration:
                         if len(parts) == 2:
                             source, target = parts
                             config[source.strip()] = target.strip()
-            except Exception as e:
-                logging.error("Failed to load configuration settings from %s: %s", CONFIGURATION_SETTINGS_FILE, e)
+            except Exception as error:
+                logging.error("Failed to load configuration settings from settings.cfg: %s", error)
+                raise ConfigurationError("Failed to load configuration settings") from error
         else:
             raise ConfigurationError("The configuration settings.cfg file could not be found")
 
@@ -66,6 +73,7 @@ class WhisperAttackConfiguration:
         """
         Loads word mappings from text files.
         """
+        logging.info("Loading word mappings...")
         word_mappings = {}
         if os.path.isfile(WORD_MAPPINGS_TEXT_FILE):
             try:
@@ -79,17 +87,23 @@ class WhisperAttackConfiguration:
                             aliases, target = parts
                             target = target.strip()
                             list(map(lambda alias: word_mappings.update({ alias: target }), aliases.split(';')))
-                logging.info("Loaded word mappings: %s", word_mappings)
-            except Exception as e:
-                logging.error("Failed to load word mappings from %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
+            except Exception as error:
+                logging.error("Failed to load word mappings from word_mappings.txt: %s", error)
+                raise ConfigurationError("Failed to load word mappings") from error
         else:
-            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
+            logging.error("word_mappings.txt file not found.")
+            raise ConfigurationError("word_mappings.txt file not found.")
+
+        logging.info("Loaded word mappings:")
+        for key, value in word_mappings.items():
+            logging.info("%s: %s", key, value)
         return word_mappings
     
     def load_fuzzy_words(self) -> list[str]:
         """
         Loads fuzzy words from text files.
         """
+        logging.info("Loading fuzzy words...")
         fuzzy_words = []
         if os.path.isfile(FUZZY_WORDS_TEXT_FILE):
             try:
@@ -98,10 +112,14 @@ class WhisperAttackConfiguration:
                         line.strip() for line in f
                         if line.strip() and not line.strip().startswith('#')
                     ]
-            except Exception as e:
-                logging.error("Failed to load fuzzy words from %s: %s", FUZZY_WORDS_TEXT_FILE, e)
+            except Exception as error:
+                logging.error("Failed to load fuzzy words from fuzzy_words.txt: %s", error)
+                raise ConfigurationError("Failed to load fuzzy words from fuzzy_words.txt") from error
         else:
-            logging.warning("%s not found; fuzzy matching list is empty.", FUZZY_WORDS_TEXT_FILE)
+            logging.error("fuzzy_words.txt file not found.")
+            raise ConfigurationError("fuzzy_words.txt file not found.")
+
+        logging.info("Loaded fuzzy words: %s", fuzzy_words)
         return fuzzy_words
 
     def add_word_mapping(self, aliases: str, replacement: str) -> None:
@@ -119,11 +137,13 @@ class WhisperAttackConfiguration:
                     f.close()
                 logging.info("Added aliases: %s", aliases)
                 logging.info("Added replacement: %s", replacement)
-            except Exception as e:
-                logging.error("Failed to add new word mapping to %s: %s", WORD_MAPPINGS_TEXT_FILE, e)
+            except Exception as error:
+                logging.error("Failed to add new word mapping to word_mappings.txt file: %s", error)
+                raise ConfigurationError("Failed to add new word mapping to word_mappings.txt file") from error
         else:
-            logging.warning("%s not found; no custom word mappings loaded.", WORD_MAPPINGS_TEXT_FILE)
-    
+            logging.error("word_mappings.txt file not found; no custom word mappings added.")
+            raise ConfigurationError("word_mappings.txt file not found; no custom word mappings added.")
+
     def get_word_mappings(self) -> dict[str, str]:
         """
         Returns the keyword mappings
