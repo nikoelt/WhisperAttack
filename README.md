@@ -31,8 +31,6 @@ In short, SeaTechNerd83 and I combined the two scripts to run voice commands thr
 
 Instructions for integrating with VAICOM can be located in the [VAICOM INTEGRATION](./VAICOM%20PRO/VAICOM_INTEGRATION.md) documentation.
 
-A VoiceAttack profile for Whisper VAICOM integration is available in this repository and linked from those instructions.
-
 ---
 
 ## Requirements
