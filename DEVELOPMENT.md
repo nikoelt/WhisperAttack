@@ -14,6 +14,24 @@ These instructions document how to build an application executable (exe) version
 
 Because the executable won't be running as a console application the logging needs to go to a file so that it can be viewed. The log file will be written to `C:\Users\username\AppData\Local\WhisperAttack\WhisperAttack.log` file. The log file will be overwritten every time the WhisperAttack server is started.
 
+## Running the WhisperAtack Python app locally
+
+WhisperAttack can be run locally without needing to build an executable during development.
+
+Install the dependencies using the below command:
+
+```console
+pip install -r requirements.txt
+```
+
+**NOTE:** These dependencies should be removed prior to building the executable as per the instructions for starting with a clean environment.
+
+Run WhisperAttack using the below command:
+
+```console
+python whisper_attack.py
+```
+
 ## Creating the executable file
 
 The commands below will build an executable version of the WhisperAttack server.
@@ -37,12 +55,6 @@ Run the below command to uninstall the packages that will be reinstalled as part
 
 ```command
 pip uninstall -r requirements.txt
-```
-
-**NOTE**: If you want to run the `whisper_server.py` file locally without building and running an executable you can reinstall these using the below command:
-
-```console
-pip install -r requirements.txt
 ```
 
 ### Building the application
@@ -72,17 +84,17 @@ Install the Python dependencies required by WhisperAttack.
 pip install -r requirements.txt
 ```
 
-Run PyInstaller to create an executable of WhisperAttack, this will be created in the `dist\whisper_server` directory.
+Run PyInstaller to create an executable of WhisperAttack, this will be created in the `dist\whisper_attack` directory.
 
 The `--noconsole` parameter means that when WhisperAttack is run no window is displayed. A WhisperAttack icon will be displayed in the Windows system tray.
 
 ```console
-pyinstaller --onedir --noconsole whisper_server.py
+pyinstaller --onedir --noconsole whisper_attack.py
 ```
 
 ### Packaging the application
 
-Copy the following files into the `dist\whisper_server` directory as these must be located beside the executable
+Copy the following files into the `dist\whisper_attack` directory as these must be located beside the executable
 
 - settings.cfg
 - fuzzy_words.txt
@@ -90,9 +102,9 @@ Copy the following files into the `dist\whisper_server` directory as these must 
 - whisper_attack_icon.png
 - add_icon.png
 
-The `whisper_server` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice. Rename `whisper_server.exe` to `WhisperAttack.exe`.
+The `whisper_attack` folder, and all its contents (including the `_internal` folder), can be moved to the location of your choice. Rename `whisper_attack.exe` to `WhisperAttack.exe`.
 
-The contents of the `whisper_server` folder can be zipped up if needing to distribute.
+The contents of the `whisper_attack` folder can be zipped up if needing to distribute.
 
 ### Running the application
 
