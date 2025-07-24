@@ -18,8 +18,19 @@ from writer import WhisperAttackWriter
 from whisper_server import WhisperServer
 from word_mappings import WhisperAttackWordMappings
 
-# This event is used to stop the the server socket and shutdown.
+# This event is used to stop the server socket and shutdown.
 exit_event = threading.Event()
+
+APPLICATION_VERSION = "1.2.1"
+
+# File paths for configuration, word mappings, and fuzzy words
+APPLICATION_PATH = ""
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle, the PyInstaller bootloader
+    # extends the sys module by a flag frozen=True
+    APPLICATION_PATH = os.path.dirname(sys.executable)
+else:
+    APPLICATION_PATH = os.path.dirname(__file__)
 
 LOCAL_APPDATA_DIR = os.getenv('LOCALAPPDATA')
 WHISPER_APPDATA_DIR = os.path.join(LOCAL_APPDATA_DIR , "WhisperAttack")
@@ -68,9 +79,11 @@ class WhisperAttack:
     def __init__(self, root: Window):
         start_logging()
 
-        self.root = root
+        logging.info(f"WhisperAttack version: {APPLICATION_VERSION}")
+        logging.info(f"WhisperAttack location: {APPLICATION_PATH}")
 
-        self.config = WhisperAttackConfiguration()
+        self.root = root
+        self.config = WhisperAttackConfiguration(APPLICATION_PATH)
 
         theme = self.get_theme()
         if theme == THEME_DARK:
@@ -134,7 +147,7 @@ class WhisperAttack:
         """
         def update_word_mapping(aliases: str, replacement: str):
             try:
-                self.config.add_word_mapping(aliases, replacement)
+                self.config.add_word_mapping(APPLICATION_PATH, aliases, replacement)
                 self.writer.write("Added new word mapping:", TAG_BLUE)
                 self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
             except ConfigurationError as error:
