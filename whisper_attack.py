@@ -83,7 +83,7 @@ class WhisperAttack:
         logging.info(f"WhisperAttack location: {APPLICATION_PATH}")
 
         self.root = root
-        self.config = WhisperAttackConfiguration(APPLICATION_PATH)
+        self.config = WhisperAttackConfiguration(APPLICATION_PATH, WHISPER_APPDATA_DIR)
 
         theme = self.get_theme()
         if theme == THEME_DARK:
@@ -147,7 +147,7 @@ class WhisperAttack:
         """
         def update_word_mapping(aliases: str, replacement: str):
             try:
-                self.config.add_word_mapping(APPLICATION_PATH, aliases, replacement)
+                self.config.add_word_mapping(WHISPER_APPDATA_DIR, aliases, replacement)
                 self.writer.write("Added new word mapping:", TAG_BLUE)
                 self.writer.write(f"{aliases}: {replacement}", TAG_GREY)
             except ConfigurationError as error:

@@ -54,6 +54,14 @@ Instructions for integrating with VAICOM can be located in the [VAICOM INTEGRATI
 
 ## Configuration
 
+The default configuration files are stored beside the WhisperAttack application. Custom configuration can be kept in
+files of the same name in the `C:\Users\username\AppData\Local\WhisperAttack` directory. These custom files can be created
+if they do not exist and can be used to override (or add to for word mappings) the default configuration.
+
+Keeping custom configuration at that location means it will not be overwritten when installing later versions of WhisperAttack.
+
+See below for the list of configuration files.
+
 ### settings.cfg
 
 The `settings.cfg` file contains configuration for WhisperAttack.
@@ -80,7 +88,7 @@ gulf;gold=Golf
 inter=Inter
 ```
 
-WhisperAttack needs to be restarted after making changes to this file. New word mappings can be added via the configuration screen and do not require a restart.
+WhisperAttack needs to be restarted after making changes to this file. New word mappings can be added via the configuration screen and do not require a restart. When adding new word mappings they will be created in your custom configuration file, `C:\Users\username\AppData\Local\WhisperAttack\word_mappings.txt`
 
 ---
 
