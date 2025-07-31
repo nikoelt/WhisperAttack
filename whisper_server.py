@@ -143,32 +143,38 @@ class WhisperServer:
         """
         whisper_model = config.get_whisper_model()
         whisper_device = config.get_whisper_device()
+        whisper_compute_type = config.get_whisper_compute_type()
         whisper_core_type = config.get_whisper_core_type()
-        logging.info("Loading Whisper model (%s), device=%s, core_type=%s ...", whisper_model, whisper_device, whisper_core_type)
         self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
         import torch
         from faster_whisper import WhisperModel
-        
+
         if whisper_device.upper() == "GPU":
             if torch.cuda.is_available():
-                compute_type = "int8_float16"
+                compute_type = whisper_compute_type
                 if whisper_core_type.lower() == "standard":
                     compute_type = "int8"
+                    logging.info("whisper_core_type is 'standard' so using compute_type '%s'", compute_type)
                 device = torch.device("cuda")
                 capability = torch.cuda.get_device_capability(device)
                 major, minor = capability
                 logging.info("GPU has cuda capability major=%s minor=%s", major, minor)
                 # Tensor Cores are available on devices with compute capability 7.0 or higher
                 if whisper_core_type.lower() == "tensor" and major < 7:
-                    logging.warning("GPU does not have tensor cores, major=%s, minor=%s", major, minor)
                     compute_type = "int8"
+                    logging.warning("GPU does not have tensor cores, major=%s, minor=%s so using compute_type '%s'", major, minor, compute_type)
+                logging.info("Loading Whisper model (%s), device=%s, core_type=%s, compute_type=%s ...", whisper_model, whisper_device, whisper_core_type, compute_type)
                 self.model = WhisperModel(whisper_model, device="cuda", compute_type=compute_type)
                 logging.info('Successfully loaded Whisper model')
                 self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
                 return None
+
             logging.error("cuda not available so using CPU")
             self.writer.write("cuda not available so using CPU", TAG_RED)
-        self.model = WhisperModel(whisper_model, device="cpu", compute_type="int8")
+
+        compute_type = "int8"
+        logging.info("Loading Whisper model (%s), device=%s, compute_type=%s ...", whisper_model, "cpu", compute_type)
+        self.model = WhisperModel(whisper_model, device="cpu", compute_type=compute_type)
         return None
 
     def start_recording(self) -> None:

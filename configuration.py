@@ -164,6 +164,12 @@ class WhisperAttackConfiguration:
         GPU or CPU, defaults to GPU
         """
         return self.config.get("whisper_device", "GPU")
+    
+    def get_whisper_compute_type(self) -> str:
+        """
+        Returns the compute type to be used when loading the Whisper model
+        """
+        return self.config.get("whisper_compute_type", "default")
 
     def get_whisper_core_type(self) -> str:
         """

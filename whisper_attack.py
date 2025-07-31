@@ -48,6 +48,9 @@ def start_logging() -> None:
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
+    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger("faster_whisper").setLevel(logging.DEBUG)
+
 
 ###############################################################################
 # ADMIN PRIVILEGES CHECK AND RE-LAUNCH
