@@ -247,6 +247,7 @@ class WhisperServer:
         """
         try:
             logging.info("Transcribing %s...", audio_path)
+            start_time = datetime.now()
             segments, _ = self.model.transcribe(
                 audio_path,
                 language='en',
@@ -272,6 +273,9 @@ class WhisperServer:
             for segment in segments:
                 raw_text += f"{segment.text}"
 
+            end_time = datetime.now()
+            duration = end_time - start_time
+            logging.info(f"Transcribing took {duration.total_seconds():.3f} seconds.")
             logging.info("Raw transcription result: '%s'", raw_text)
             self.writer.write(f"Raw transcribed text: '{raw_text}'", TAG_BLUE)
             # Ignore blank audio as nothing has been recorded
