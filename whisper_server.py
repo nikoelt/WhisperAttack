@@ -6,6 +6,7 @@ import subprocess
 import unicodedata
 import tempfile
 import re
+from datetime import datetime
 from threading import Event
 from typing import Callable
 import keyboard
@@ -225,13 +226,14 @@ class WhisperServer:
         self.wave_file = None
         self.recording = False
         time.sleep(0.01)
-        logging.info("Checking if file exists: %s", self.audio_file)
+        logging.debug("Checking if file exists: %s", self.audio_file)
         if os.path.exists(self.audio_file):
             size = os.path.getsize(self.audio_file)
-            logging.info("File exists, size = %s bytes", size)
+            logging.info("Audio file size = %s bytes", size)
         else:
-            logging.error(("File does NOT exist according to os.path.exists()!"))
-            self.writer.write("File does NOT exist according to os.path.exists()!", TAG_RED)
+            logging.error(("Audio file '%s' not found", self.audio_file))
+            self.writer.write("Audio file not found!", TAG_RED)
+            return None
         recognized_text = self.transcribe_audio(self.audio_file)
         if recognized_text:
             self.send_to_voiceattack(recognized_text)
@@ -246,7 +248,7 @@ class WhisperServer:
         after running it through functions to cleanup the raw text.
         """
         try:
-            logging.info("Transcribing %s...", audio_path)
+            logging.info("Transcribing audio...")
             start_time = datetime.now()
             segments, _ = self.model.transcribe(
                 audio_path,
