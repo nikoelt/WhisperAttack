@@ -15,6 +15,7 @@ import soundfile as sf
 import pyperclip
 from rapidfuzz import process
 from text2digits import text2digits
+from wcwidth import wcswidth
 from configuration import WhisperAttackConfiguration
 from writer import WhisperAttackWriter
 from theme import TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
@@ -114,6 +115,67 @@ def custom_cleanup_text(text: str, word_mappings: dict[str, str]) -> str:
     text = re.sub(r"([^\w\d\s])*(?![\w\-\w])(?![^-])?", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+def format_for_dcs_kneeboard(text: str, line_length: int) -> str:
+    """
+    Formats text for word wrapping for use in the DCS kneeboard
+    This is based on the original code from BojotecX WhisperKneeboard
+    https://github.com/BojoteX/KneeboardWhisper
+    """
+    # Split the text into words and handle punctuation
+    words = re.findall(r'\S+|\n', text)
+
+    lines = []
+    current_words = []
+    current_len = 0
+
+    for word in words:
+        word_len = wcswidth(word)
+
+        # If adding the next word exceeds the line length
+        if current_len + word_len + (len(current_words)) > line_length:
+            line = justify_line(current_words, line_length)
+            lines.append(line)
+            current_words = [word]
+            current_len = word_len
+        else:
+            current_words.append(word)
+            current_len += word_len
+
+    # Justify the last line (left-justified)
+    if current_words:
+        last_line = ' '.join(current_words).ljust(line_length)
+        lines.append(last_line)
+
+    # Ensure the last line is completely blank
+    lines.append(' ' * line_length)
+
+    return '\n'.join(lines)
+
+def justify_line(words: list[str], line_length: int):
+    """
+    Justify the words from left to right
+    """
+    if len(words) == 1:
+        # If there's only one word, left-justify it
+        return words[0].ljust(line_length)
+
+    # Calculate the total display width of words
+    total_words_length = sum(wcswidth(word) for word in words)
+    total_spaces = line_length - total_words_length
+    gaps = len(words) - 1
+    spaces_between_words = [total_spaces // gaps] * gaps
+
+    # Distribute the remaining spaces from left to right
+    for i in range(total_spaces % gaps):
+        spaces_between_words[i] += 1
+
+    # Build the justified line
+    line = ''
+    for i, word in enumerate(words[:-1]):
+        line += word + ' ' * spaces_between_words[i]
+    line += words[-1]  # Add the last word without extra spaces after it
+    return line
 
 ###############################################################################
 # WHISPER SERVER
@@ -236,7 +298,11 @@ class WhisperServer:
             return None
         recognized_text = self.transcribe_audio(self.audio_file)
         if recognized_text:
-            self.send_to_voiceattack(recognized_text)
+            trigger_phrase = "note "
+            if recognized_text.lower().startswith(trigger_phrase):
+                self.send_to_dcs_kneeboard(recognized_text)
+            else:
+                self.send_to_voiceattack(recognized_text)
         else:
             logging.info("No transcription result.")
             self.writer.write("No transcription result", TAG_GREY)
@@ -299,26 +365,28 @@ class WhisperServer:
             self.writer.write(f"Failed to transcribe audio: {e}", TAG_RED)
             return None
 
+    def send_to_dcs_kneeboard(self, text: str) -> None:
+        """
+        Copy the text to the clipboard and then send to
+        the DCS kneeboard.
+        """
+        # Strip the "note" trigger phrase and then format into multiple
+        # lines to fit the kneeboard page
+        text_for_kneeboard = format_for_dcs_kneeboard(text[5:].strip(), self.config.get_text_line_length())
+        pyperclip.copy(text_for_kneeboard)
+        logging.info("Text copied to clipboard for DCS kneeboard.")
+        try:
+            keyboard.press_and_release('ctrl+alt+p')
+            self.writer.write(f"Sent text to DCS: {text_for_kneeboard}", TAG_GREEN)
+            logging.info("DCS kneeboard populated")
+        except Exception as e:
+            logging.error("Failed to simulate keyboard shortcut: %s", e)
+            self.writer.write(f"Failed to simulate keyboard shortcut: {e}", TAG_RED)
+
     def send_to_voiceattack(self, text: str) -> None:
         """
-        Sends the transcribed text to VoiceAttack or copies it to the clipboard
-        if the text starts with the trigger phrase.
+        Sends the transcribed text to VoiceAttack.
         """
-        trigger_phrase = "note "
-        if text.lower().startswith(trigger_phrase):
-            text_for_kneeboard = text[5:].strip()
-            pyperclip.copy(text_for_kneeboard)
-            logging.info("Text copied to clipboard for DCS kneeboard.")
-            try:
-                keyboard.press_and_release('ctrl+alt+p')
-                self.writer.write(f"Sent text to DCS: {text_for_kneeboard}", TAG_GREEN)
-                logging.info("DCS kneeboard populated")
-            except Exception as e:
-                logging.error("Failed to simulate keyboard shortcut: %s", e)
-                self.writer.write(f"Failed to simulate keyboard shortcut: {e}", TAG_RED)
-
-            # Do NOT send to VoiceAttack if trigger word "note " was used
-            return
         if self.voiceattack is None:
             logging.error("VoiceAttack not found so command will not be sent")
             self.writer.write("VoiceAttack not found so command will not be sent", TAG_RED)
