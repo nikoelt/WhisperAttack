@@ -200,3 +200,12 @@ class WhisperAttackConfiguration:
             return voiceattack_location
         logging.error("VoiceAttack could not be located at: '%s'", voiceattack_location)
         return None
+    
+    def get_text_line_length(self) -> int:
+        """
+        Returns the line length for wrapping text. Used for sending text
+        to the DCS kneeboard notes.
+        Default is 53 characters.
+        """
+        line_length = self.config.get("text_line_length", 53)
+        return int(line_length)
