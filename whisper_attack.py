@@ -48,6 +48,7 @@ def start_logging() -> None:
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
+    logging.getLogger().setLevel(logging.INFO)
 
 ###############################################################################
 # ADMIN PRIVILEGES CHECK AND RE-LAUNCH

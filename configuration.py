@@ -164,6 +164,15 @@ class WhisperAttackConfiguration:
         GPU or CPU, defaults to GPU
         """
         return self.config.get("whisper_device", "GPU")
+    
+    def get_whisper_compute_type(self) -> str:
+        """
+        Returns the compute type to be used when loading the Whisper model
+        auto, default, or specific value, e.g. int8_float16, defaults to "default"
+        which for Whisper models is float16
+        https://opennmt.net/CTranslate2/quantization.html#quantize-on-model-loading
+        """
+        return self.config.get("whisper_compute_type", "default")
 
     def get_whisper_core_type(self) -> str:
         """
