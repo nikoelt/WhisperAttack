@@ -2,7 +2,6 @@ import os
 import socket
 import time
 import logging
-import subprocess
 import unicodedata
 import tempfile
 import re
@@ -198,7 +197,8 @@ class WhisperServer:
         self.wave_file = None
         self.stream = None
 
-        self.voiceattack = self.config.get_voiceattack()
+        self.voiceattack_host = self.config.get_voiceattack_host()
+        self.voiceattack_port = self.config.get_voiceattack_port()
 
     def load_whisper_model(self, config: WhisperAttackConfiguration) -> None:
         """
@@ -387,17 +387,19 @@ class WhisperServer:
         """
         Sends the transcribed text to VoiceAttack.
         """
-        if self.voiceattack is None:
-            logging.error("VoiceAttack not found so command will not be sent")
-            self.writer.write("VoiceAttack not found so command will not be sent", TAG_RED)
-            return
         try:
             logging.info("Sending recognized text to VoiceAttack: %s", text)
-            subprocess.call([self.voiceattack, '-command', text])
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+                client_socket.connect((self.voiceattack_host, self.voiceattack_port))
+                client_socket.sendall(text.encode())
+
+            logging.info("Sent text to VoiceAttack: %s", text)
             self.writer.write(f"Sent text to VoiceAttack: {text}", TAG_GREEN)
         except Exception as e:
-            logging.error("Error calling VoiceAttack: %s", e)
+            logging.error("Error calling VoiceAttack (%s:%s): %s", self.voiceattack_host, self.voiceattack_port, e)
             self.writer.write(f"Error calling VoiceAttack: {e}", TAG_RED)
+        finally:
+            client_socket.close()
 
     def handle_command(self, cmd: str) -> None:
         """

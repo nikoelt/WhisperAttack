@@ -47,7 +47,7 @@ Instructions for integrating with VAICOM can be located in the [VAICOM INTEGRATI
 
 ## Installation
 
-1. Download the latest release [WhisperAttack v1.2.1.zip file from the Google drive](https://drive.google.com/drive/folders/1rQ8k2JxLADUmjrkON6827RyPDkXMvdci?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. Download the latest release [WhisperAttack v1.2.2.zip file from the Google drive](https://drive.google.com/drive/folders/1rQ8k2JxLADUmjrkON6827RyPDkXMvdci?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
 1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
@@ -71,7 +71,6 @@ The default values should cover most cases but can be changed:
 - `whisper_model` - The Whisper model to use, `small.en` by default. See the table at the bottom of the README file for options.
   - A smaller size can be specified for reducing the amount of VRAM used, e.g. `base.en` or `tiny.en`
 - `whisper_device` - Which device to run the Whisper transcription process on, `GPU` (default) or `CPU`
-- `voiceattack_location` - The full path to your VoiceAttack executable file if you have installed VoiceAttack in a non-default location.
 - `theme` - To display the WhisperAttack UI in light or dark mode. Valid values: 
   - `default` - this will use the current theme you have set for Windows
   - `dark` - dark mode

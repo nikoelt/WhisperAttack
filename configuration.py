@@ -189,17 +189,23 @@ class WhisperAttackConfiguration:
         the name returned will be the current Windows theme.
         """
         return self.config.get("theme", THEME_DEFAULT)
-
-    def get_voiceattack(self) -> str | None:
+    
+    def get_voiceattack_host(self) -> str:
         """
-        Returns the path to the VoiceAttack executable after validating
-        that it is present at the location specified in the configuration.
+        Returns the IP address of the machine running VoiceAttack.
+        Used for sending the transcribed text to the VoiceAttack plugin.
+        Default is 127.0.0.1 (the ip address for localhost).
         """
-        voiceattack_location = self.config.get("voiceattack_location", "")
-        if os.path.isfile(voiceattack_location):
-            return voiceattack_location
-        logging.error("VoiceAttack could not be located at: '%s'", voiceattack_location)
-        return None
+        return self.config.get("voiceattack_host", "127.0.0.1")
+    
+    def get_voiceattack_port(self) -> int:
+        """
+        Returns the port number to connect to for VoiceAttack.
+        Used for sending the transcribed text to the VoiceAttack plugin.
+        Default is 65433.
+        """
+        voiceattack_port = self.config.get("voiceattack_port", 65433)
+        return int(voiceattack_port)
     
     def get_text_line_length(self) -> int:
         """

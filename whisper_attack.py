@@ -21,7 +21,7 @@ from word_mappings import WhisperAttackWordMappings
 # This event is used to stop the server socket and shutdown.
 exit_event = threading.Event()
 
-APPLICATION_VERSION = "1.2.1"
+APPLICATION_VERSION = "1.2.2"
 
 # File paths for configuration, word mappings, and fuzzy words
 APPLICATION_PATH = ""
@@ -50,29 +50,6 @@ def start_logging() -> None:
     )
     logging.getLogger().setLevel(logging.INFO)
 
-###############################################################################
-# ADMIN PRIVILEGES CHECK AND RE-LAUNCH
-###############################################################################
-def is_admin() -> bool:
-    """
-    Returns true if the user has admin privileges to run WhisperAttack.
-    """
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except Exception:
-        return False
-
-if not is_admin():
-    # Build a properly quoted command line from sys.argv
-    PARAMS = " ".join(f'"{arg}"' for arg in sys.argv)
-    ret = ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable, PARAMS, None, 1
-    )
-    if ret <= 32:
-        print("Error: Failed to elevate privileges.")
-        input("Press Enter to exit...")
-    sys.exit()
-
 class WhisperAttack:
     """
     Class for the main WhisperAttack application.
@@ -80,8 +57,8 @@ class WhisperAttack:
     def __init__(self, root: Window):
         start_logging()
 
-        logging.info(f"WhisperAttack version: {APPLICATION_VERSION}")
-        logging.info(f"WhisperAttack location: {APPLICATION_PATH}")
+        logging.info("WhisperAttack version: %s", APPLICATION_VERSION)
+        logging.info("WhisperAttack location: %s", APPLICATION_PATH)
 
         self.root = root
         self.config = WhisperAttackConfiguration(APPLICATION_PATH, WHISPER_APPDATA_DIR)
