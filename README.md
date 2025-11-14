@@ -47,7 +47,7 @@ Instructions for integrating with VAICOM can be located in the [VAICOM INTEGRATI
 
 ## Installation
 
-1. Download the latest release [WhisperAttack v1.2.2.zip file from the Google drive](https://drive.google.com/drive/folders/1rQ8k2JxLADUmjrkON6827RyPDkXMvdci?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
+1. Download the latest release [WhisperAttack v1.2.2.zip file from the Google drive](https://drive.google.com/drive/folders/1Op3aNXtz8kGjsbROV74DPjq2em_34--c?usp=sharing) and unarchive anywhere on your computer, e.g. `C:\Program Files\WhisperAttack`
 1. A shortcut can be created to the `WhisperAttack.exe` application
 
 ---
