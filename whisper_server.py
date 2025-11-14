@@ -24,8 +24,8 @@ from theme import TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
 ###############################################################################
 HOST = '127.0.0.1'
 PORT = 65432
-CLIENT_HOST = 
-CLIENT_PORT = 
+CLIENT_HOST = config.get_voiceattack_host()
+CLIENT_PORT = config.get_dc_port()
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
