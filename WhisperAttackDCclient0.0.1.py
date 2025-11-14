@@ -24,8 +24,8 @@ from theme import TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
 ###############################################################################
 HOST = '127.0.0.1'
 PORT = 65432
-CLIENT_HOST = 
-CLIENT_PORT = 
+SERVER_HOST = config.get_server_host()   # Pulls the server IP address from settings.cfg
+SERVER_PORT = config.get_server_port() # Pulls the server network port from settings.cfg
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
@@ -201,46 +201,6 @@ class WhisperServer:
         self.voiceattack_host = self.config.get_voiceattack_host()
         self.voiceattack_port = self.config.get_voiceattack_port()
 
-    def load_whisper_model(self, config: WhisperAttackConfiguration) -> None:
-        """
-        Loads the Whisper model.
-        """
-        whisper_model = config.get_whisper_model()
-        whisper_device = config.get_whisper_device()
-        whisper_compute_type = config.get_whisper_compute_type()
-        whisper_core_type = config.get_whisper_core_type()
-        self.writer.write(f"Loading Whisper model ({whisper_model}), device={whisper_device} ...")
-        import torch
-        from faster_whisper import WhisperModel
-
-        if whisper_device.upper() == "GPU":
-            if torch.cuda.is_available():
-                compute_type = whisper_compute_type
-                if whisper_core_type.lower() == "standard":
-                    compute_type = "int8"
-                    logging.info("whisper_core_type is 'standard' so using compute_type '%s'", compute_type)
-                device = torch.device("cuda")
-                capability = torch.cuda.get_device_capability(device)
-                major, minor = capability
-                logging.info("GPU has cuda capability major=%s minor=%s", major, minor)
-                # Tensor Cores are available on devices with compute capability 7.0 or higher
-                if whisper_core_type.lower() == "tensor" and major < 7:
-                    compute_type = "int8"
-                    logging.warning("GPU does not have tensor cores, major=%s, minor=%s so using compute_type '%s'", major, minor, compute_type)
-                logging.info("Loading Whisper model (%s), device=%s, core_type=%s, compute_type=%s ...", whisper_model, whisper_device, whisper_core_type, compute_type)
-                self.model = WhisperModel(whisper_model, device="cuda", compute_type=compute_type)
-                logging.info('Successfully loaded Whisper model')
-                self.writer.write('Successfully loaded Whisper model', TAG_GREEN)
-                return None
-
-            logging.error("cuda not available so using CPU")
-            self.writer.write("cuda not available so using CPU", TAG_RED)
-
-        compute_type = "int8"
-        logging.info("Loading Whisper model (%s), device=%s, compute_type=%s ...", whisper_model, "cpu", compute_type)
-        self.model = WhisperModel(whisper_model, device="cpu", compute_type=compute_type)
-        return None
-
     def start_recording(self) -> None:
         """
         Begin recording to a wav file.
@@ -272,9 +232,9 @@ class WhisperServer:
         self.recording = True
         return None
 
-    def stop_and_transcribe(self) -> None:
+    def stop_and_transmit(self) -> None:
         """
-        Stops the currently running recording to then have this transcribed.
+        Stops the currently running recording to then have this tranmitted.
         """
         if not self.recording:
             logging.warning("Not currently recording—ignoring stop command.")
@@ -297,76 +257,25 @@ class WhisperServer:
             logging.error(("Audio file '%s' not found", self.audio_file))
             self.writer.write("Audio file not found!", TAG_RED)
             return None
-        recognized_text = self.transcribe_audio(self.audio_file)
-        if recognized_text:
-            trigger_phrase = "note "
-            if recognized_text.lower().startswith(trigger_phrase):
-                self.send_to_dcs_kneeboard(recognized_text)
-            else:
-                self.send_to_voiceattack(recognized_text)
-        else:
-            logging.info("No transcription result.")
-            self.writer.write("No transcription result", TAG_GREY)
-        return None
 
-    def transcribe_audio(self, audio_path: str) -> str | None:
-        """
-        Transcribes the recorded audio to text and then returns the final result
-        after running it through functions to cleanup the raw text.
-        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   # defines the socket
         try:
-            logging.info("Transcribing audio...")
-            start_time = datetime.now()
-            segments, _ = self.model.transcribe(
-                audio_path,
-                language='en',
-                beam_size=5,
-                suppress_tokens=[0,11,13,30,986],
-                initial_prompt=(
-                    "This is aviation-related speech for DCS Digital Combat Simulator, "
-                    "Expect references to airports in Caucasus Georgia and Russia. Expect callsigns like Enfield, Springfield, Uzi, Colt, Dodge, "
-                    "Ford, Chevy, Pontiac, Army Air, Apache, Crow, Sioux, Gatling, Gunslinger, "
-                    "Hammerhead, Bootleg, Palehorse, Carnivor, Saber, Hawg, Boar, Pig, Tusk, Viper, "
-                    "Venom, Lobo, Cowboy, Python, Rattler, Panther, Wolf, Weasel, Wild, Ninja, Jedi, "
-                    "Hornet, Squid, Ragin, Roman, Sting, Jury, Joker, Ram, Hawk, Devil, Check, Snake, "
-                    "Dude, Thud, Gunny, Trek, Sniper, Sled, Best, Jazz, Rage, Tahoe, Bone, Dark, Vader, "
-                    "Buff, Dump, Kenworth, Heavy, Trash, Cargo, Ascot, Overlord, Magic, Wizard, Focus, "
-                    "Darkstar, Texaco, Arco, Shell, Axeman, Darknight, Warrior, Pointer, Eyeball, "
-                    "Moonbeam, Whiplash, Finger, Pinpoint, Ferret, Shaba, Playboy, Hammer, Jaguar, "
-                    "Deathstar, Anvil, Firefly, Mantis, Badger. Also expect usage of the phonetic "
-                    "alphabet Alpha, Bravo, Charlie, X-ray."
-                )
-            )
-
-            raw_text = ""
-            for segment in segments:
-                raw_text += f"{segment.text}"
-
-            end_time = datetime.now()
-            duration = end_time - start_time
-            logging.info(f"Transcribing took {duration.total_seconds():.3f} seconds.")
-            logging.info("Raw transcription result: '%s'", raw_text)
-            self.writer.write(f"Raw transcribed text: '{raw_text}'", TAG_BLUE)
-            # Ignore blank audio as nothing has been recorded
-            if raw_text.strip() == "[BLANK_AUDIO]" or raw_text.strip() == "":
-                return None
-            cleaned_text = custom_cleanup_text(raw_text, self.config.get_word_mappings())
-            fuzzy_corrected_text = correct_dcs_and_phonetics_separately(
-                cleaned_text,
-                self.config.get_fuzzy_words(),
-                phonetic_alphabet,
-                dcs_threshold=85,
-                phonetic_threshold=85
-            )
-            logging.info("Cleaned transcription: %s", cleaned_text)
-            logging.info("Fuzzy-corrected transcription: %s", fuzzy_corrected_text)
-            return fuzzy_corrected_text
+            s.connect((SERVER_HOST, SERVER_PORT))    # Connects to the Compute server
+            logging.info(f"Connected to server at {SERVER_HOST}:{SERVER_PORT}")
         except Exception as e:
-            logging.error("Failed to transcribe audio: %s", e)
-            self.writer.write(f"Failed to transcribe audio: {e}", TAG_RED)
-            return None
-
-    def send_to_dcs_kneeboard(self, text: str) -> None:
+            logging.error("Connection to External Whisper Server Failed", e)
+            self.writer.write(f"Unable to Connect to External Server: {e}", TAG_RED)
+        with open(self.audio_file, 'rb') as f:  # parses the audio file as raw bytes and loads it into memory
+            audio_data = f.read()
+            try:
+            s.sendall(audio_data)   # sends all the parsed audio data to the defined socket
+            logging.info(f"Sending file: {self.audio_file}")
+            except Exception as e:
+                logging.error("Failed to send audio file to Whisper Server", e)
+                self.writer.write(f"Unable send audio file to Whisper Server: {e}", TAG_RED)
+        logging.info(f"Sent {len(audio_data)} bytes")
+        
+    def send_to_dcs_kneeboard(self, text: str) -> None: 
         """
         Copy the text to the clipboard and then send to
         the DCS kneeboard.
@@ -425,58 +334,27 @@ class WhisperServer:
         Starts a socket server and listens for incoming commands.
         """
         self.load_whisper_model(self.config)
-        
-        if config.get_compute_location() = distributed:
-            logging.info("Distributed Compute Server started and listening on %s:%s", CLIENT_HOST, CLIENT_PORT)
-            self.writer.write(f"Distributed Compute Server and listening on {CLIENT_HOST}:{CLIENT_PORT}", TAG_GREEN)
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((CLIENT_HOST, CLIENT_PORT))
-                s.listen()
-                s.settimeout(1.0)
 
-                while not self.exit_event.is_set():
-                    try:
-                        conn, _ = s.accept()
-                        with conn:
-                            output_filename = os.path.join(TEMP_DIR, "whisper_temp_remote_recording.wav") # defines file name and path
-                            with open(output_filename, "wb") as f:
-                                while True:
-                                    chunk = conn.recv(1048576) # Defines maximum file chunk size as 1 MB, value is in bytes
-                                    if not chunk:           # client done sending
-                                        break
-                                    f.write(chunk)
-                        
-                            logging.info("audio file received successfully")
+        logging.info("Server started and listening on %s:%s", HOST, PORT)
+        self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen()
+            s.settimeout(1.0)
 
-                    except socket.timeout:
-                        continue
-                    except Exception as e:
-                        logging.error("Socket error: %s", e)
-                        self.writer.write(f"Socket error: {e}", TAG_RED)
-                        continue
-        
-        elif config.get_compute_location() = local:
-            logging.info("Local Server started and listening on %s:%s", HOST, PORT)
-            self.writer.write(f"Local Server started and listening on {HOST}:{PORT}", TAG_GREEN)
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((HOST, PORT))
-                s.listen()
-                s.settimeout(1.0)
-
-                while not self.exit_event.is_set():
-                    try:
-                        conn, _ = s.accept()
-                        with conn:
-                            data = conn.recv(1024).decode('utf-8')
-                            if data:
-                                self.handle_command(data)
-                    except socket.timeout:
-                        continue
-                    except Exception as e:
-                        logging.error("Socket error: %s", e)
-                        self.writer.write(f"Socket error: {e}", TAG_RED)
-                        continue
-        
+            while not self.exit_event.is_set():
+                try:
+                    conn, _ = s.accept()
+                    with conn:
+                        data = conn.recv(1024).decode('utf-8')
+                        if data:
+                            self.handle_command(data)
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    logging.error("Socket error: %s", e)
+                    self.writer.write(f"Socket error: {e}", TAG_RED)
+                    continue
         if self.recording:
             self.stop_and_transcribe()
 

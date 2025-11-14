@@ -206,7 +206,26 @@ class WhisperAttackConfiguration:
         """
         voiceattack_port = self.config.get("voiceattack_port", 65433)
         return int(voiceattack_port)
-    
+     
+    def get_dc_port(self) -> int:
+        """
+        Returns the port number of the machine running the distributed compute client.
+        Used for connecting to the DCclient.
+        Default is 65434.
+        """
+        dc_port = self.config.get("dc_port", 65434)
+        return int(dc_port)
+
+    def get_compute_location(self) -> str:
+        """
+        Defines the mode which WhisperAttack operates in.
+        Defaults to "local" which is traditional local compute for WA.
+        A value of "distributed" changes the behavior of the server and allows WA to accept
+        .wav files instead of start or stop recording commands.
+        Values: "local" or "distributed"
+        """
+        return self.config.get("compute_location", "local")
+
     def get_text_line_length(self) -> int:
         """
         Returns the line length for wrapping text. Used for sending text

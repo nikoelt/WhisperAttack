@@ -219,7 +219,7 @@ class WhisperAttackConfiguration:
         Returns the port number to connect to for the Distributed compute server.
         Default is 65434.
         """
-        voiceattack_port = self.config.get("server_port", 65434)
+        server_port = self.config.get("server_port", 65434)
         return int(server_port)
 
     def get_text_line_length(self) -> int:
