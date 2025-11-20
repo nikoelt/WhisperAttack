@@ -13,6 +13,8 @@ namespace WhisperAttackServerCommand
     {
         private static bool _isRunning = true;
         private static TcpListener _listener = null;
+        private static IPAddress _listenerIpAddress = IPAddress.Parse("127.0.0.1");
+        private static int _listenerPort = 65433;
 
         public static string VA_DisplayName()
         {
@@ -35,8 +37,9 @@ namespace WhisperAttackServerCommand
 
         public static void VA_Init1(dynamic vaProxy)
         {
-            string server = "127.0.0.1"; // Localhost
-            int port = 65432; // Port of the Python server
+            // Configuration for connecting to the WhisperAttack server.
+            string server = "127.0.0.1";
+            int port = 65432;
 
             try
             {
@@ -51,7 +54,7 @@ namespace WhisperAttackServerCommand
                 vaProxy.WriteToLog($"Failed to connect to WhisperAttack server: {ex.Message}", "red");
             }
 
-
+            loadConfiguration(vaProxy);
             StartCommandListener(vaProxy);
         }
 
@@ -112,15 +115,86 @@ namespace WhisperAttackServerCommand
             }
         }
 
+        private static void loadConfiguration(dynamic vaProxy)
+        {
+            string settingsFile = "Apps\\WhisperAttackServerCommand\\settings.cfg";
+            string currentDir = Directory.GetCurrentDirectory();
+            string filePath = Path.Combine(currentDir, settingsFile);
+
+            // Read the configuration file, if it exists, in the format key=value
+            if (!File.Exists(filePath))
+            {
+                vaProxy.WriteToLog($"WhisperAttack configuration file ({filePath}) not found, using defaults", "orange");
+                return;
+            }
+
+            try
+            {
+                foreach (var line in File.ReadAllLines(filePath))
+                {
+                    // Trim whitespace and skip empty or comment lines
+                    var trimmed = line.Trim();
+                    if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+                        continue;
+
+                    // Split into key and value at the first '='
+                    var parts = trimmed.Split(new[] { '=' }, 2);
+                    if (parts.Length == 2)
+                    {
+                        string key = parts[0].Trim();
+                        string value = parts[1].Trim();
+
+                        
+                        if (!string.IsNullOrEmpty(key))
+                        {
+                            if (key.Equals("listener_address"))
+                            {
+                                if (!IPAddress.TryParse(value, out IPAddress ipAddress))
+                                {
+                                    vaProxy.WriteToLog($"Invalid listener ip address {value}, using default 127.0.0.1", "red");
+                                }
+                                else
+                                {
+                                    _listenerIpAddress = ipAddress;
+                                }
+                            }
+                            else if (key.Equals("listener_port"))
+                            {
+                                try
+                                {
+
+                                    _listenerPort = int.Parse(value);
+                                }
+                                catch
+                                {
+                                    vaProxy.WriteToLog($"Invalid listener port: {value}, using default 65433", "red");
+                                }
+                            }
+                            else
+                            {
+                                vaProxy.WriteToLog($"Ignoring unknown WhisperAttack configuration {key}={value}", "orange");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        vaProxy.WriteToLog($"Skipping invalid configuration: {line}", "orange");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                vaProxy.WriteToLog($"Error reading WhisperAttack configuration file: {ex.Message}", "red");
+            }
+        }
+
         private static async Task StartCommandListener(dynamic vaProxy)
         {
-            int port = 65433;
-            
-            vaProxy.WriteToLog($"Starting WhisperAttack listener on {port}", "blue");
+            vaProxy.WriteToLog($"Starting WhisperAttack listener on {_listenerIpAddress}:{_listenerPort}", "blue");
             
             try
             {
-                _listener = new TcpListener(IPAddress.Loopback, port);
+                _listener = new TcpListener(new IPEndPoint(_listenerIpAddress, _listenerPort));
                 _listener.Start();
                 
                 vaProxy.WriteToLog($"WhisperAttack listener started", "blue");
