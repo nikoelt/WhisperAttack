@@ -11,6 +11,9 @@ namespace WhisperAttack
 {
     public class WhisperAttackServerCommand
     {
+        // Reference to the VoiceAttack proxy
+        private static dynamic _proxy;
+
         private static bool _isRunning = true;
         private static TcpListener _listener = null;
         private static IPAddress _listenerIpAddress = IPAddress.Parse("127.0.0.1");
@@ -59,6 +62,8 @@ namespace WhisperAttack
         /// <param name="vaProxy">The VoiceAttack proxy for calling VoiceAttack functions</param>
         public static void VA_Init1(dynamic vaProxy)
         {
+            _proxy = vaProxy;
+
             // Run a connection test to see if WhisperAttack is currently running and
             // listening for server commands.
             try
@@ -75,11 +80,11 @@ namespace WhisperAttack
             }
             catch (Exception ex)
             {
-                vaProxy.WriteToLog($"Failed to connect to WhisperAttack server: {ex.Message}", "red");
+                _proxy.WriteToLog($"Failed to connect to WhisperAttack server: {ex.Message}", "red");
             }
 
-            LoadConfiguration(vaProxy);
-            StartCommandListener(vaProxy);
+            LoadConfiguration();
+            StartCommandListener();
         }
 
         /// <summary>
@@ -105,7 +110,7 @@ namespace WhisperAttack
                                 string command = "start"; // Command sent to whisper server
                                 byte[] data = Encoding.ASCII.GetBytes(command);
                                 stream.Write(data, 0, data.Length);
-                                vaProxy.WriteToLog("Start WhisperAttack recording", "grey");
+                                _proxy.WriteToLog("Start WhisperAttack recording", "grey");
                                 break;
                             }
 
@@ -114,7 +119,7 @@ namespace WhisperAttack
                                 string command = "stop"; // Command sent to whisper server
                                 byte[] data = Encoding.ASCII.GetBytes(command);
                                 stream.Write(data, 0, data.Length);
-                                vaProxy.WriteToLog("Stop WhisperAttack recording", "grey");
+                                _proxy.WriteToLog("Stop WhisperAttack recording", "grey");
                                 break;
                             }
                     }
@@ -122,7 +127,7 @@ namespace WhisperAttack
             }
             catch (Exception ex)
             {
-                vaProxy.WriteToLog($"WhisperAttack server command error: {ex.Message}", "red");
+                _proxy.WriteToLog($"WhisperAttack server command error: {ex.Message}", "red");
             }
         }
 
@@ -153,11 +158,10 @@ namespace WhisperAttack
         /// Configuration is in the format key=value
         /// Configuration specifies the ip address and port for listening on to receive text commands.
         /// </summary>
-        /// <param name="vaProxy">The VoiceAttack proxy for calling VoiceAttack functions</param>
-        private static void LoadConfiguration(dynamic vaProxy)
+        private static void LoadConfiguration()
         {
             // Get the VoiceAttack directory that contains plugins
-            string voiceAttackAppsDir = vaProxy.SessionState["VA_APPS"];
+            string voiceAttackAppsDir = _proxy.SessionState["VA_APPS"];
             // Create the path to the WhisperAttack plugin directory and configuration file under the folder
             // that VoiceAttack keeps plugins in.
             string filePath = Path.Combine(voiceAttackAppsDir, "WhisperAttackServerCommand\\settings.cfg");
@@ -165,7 +169,7 @@ namespace WhisperAttack
             // Read the configuration file, if it exists, in the format key=value
             if (!File.Exists(filePath))
             {
-                vaProxy.WriteToLog($"WhisperAttack configuration file ({filePath}) not found, using defaults", "orange");
+                _proxy.WriteToLog($"WhisperAttack configuration file ({filePath}) not found, using defaults", "orange");
                 return;
             }
 
@@ -193,7 +197,7 @@ namespace WhisperAttack
                                 // Check if the value provided is a valid IP address
                                 if (!IPAddress.TryParse(value, out IPAddress ipAddress))
                                 {
-                                    vaProxy.WriteToLog($"Invalid listener ip address {value}, using default 127.0.0.1", "red");
+                                    _proxy.WriteToLog($"Invalid listener ip address {value}, using default 127.0.0.1", "red");
                                 }
                                 else
                                 {
@@ -209,24 +213,24 @@ namespace WhisperAttack
                                 }
                                 catch
                                 {
-                                    vaProxy.WriteToLog($"Invalid listener port: {value}, using default 65433", "red");
+                                    _proxy.WriteToLog($"Invalid listener port: {value}, using default 65433", "red");
                                 }
                             }
                             else
                             {
-                                vaProxy.WriteToLog($"Ignoring unknown WhisperAttack configuration {key}={value}", "orange");
+                                _proxy.WriteToLog($"Ignoring unknown WhisperAttack configuration {key}={value}", "orange");
                             }
                         }
                     }
                     else
                     {
-                        vaProxy.WriteToLog($"Skipping invalid configuration: {line}", "orange");
+                        _proxy.WriteToLog($"Skipping invalid configuration: {line}", "orange");
                     }
                 }
             }
             catch (Exception ex)
             {
-                vaProxy.WriteToLog($"Error reading WhisperAttack configuration file: {ex.Message}", "red");
+                _proxy.WriteToLog($"Error reading WhisperAttack configuration file: {ex.Message}", "red");
             }
         }
 
@@ -234,27 +238,26 @@ namespace WhisperAttack
         /// Start the TCP listener for receiving text commands.
         /// This is run as a Task so that it does not block the main plugin thread while listening.
         /// </summary>
-        /// <param name="vaProxy">The VoiceAttack proxy for calling VoiceAttack functions</param>
-        /// <returns></returns>
-        private static async Task StartCommandListener(dynamic vaProxy)
+        /// <returns>Runnable Task for the command listener</returns>
+        private static async Task StartCommandListener()
         {
-            vaProxy.WriteToLog($"Starting WhisperAttack listener on {_listenerIpAddress}:{_listenerPort}", "blue");
+            _proxy.WriteToLog($"Starting WhisperAttack listener on {_listenerIpAddress}:{_listenerPort}", "blue");
             
             try
             {
                 _listener = new TcpListener(new IPEndPoint(_listenerIpAddress, _listenerPort));
                 _listener.Start();
-                
-                vaProxy.WriteToLog($"WhisperAttack listener started", "blue");
+
+                _proxy.WriteToLog($"WhisperAttack listener started", "blue");
 
                 while (_isRunning)
                 {
-                    await HandleWhisperAttackCommand(vaProxy, await _listener.AcceptTcpClientAsync());
+                    await HandleWhisperAttackCommand(await _listener.AcceptTcpClientAsync());
                 }
             }
             catch (Exception ex)
             {
-                vaProxy.WriteToLog($"Error starting WhisperAttack listener: {ex.Message}", "red");
+                _proxy.WriteToLog($"Error starting WhisperAttack listener: {ex.Message}", "red");
             }
         }
 
@@ -262,10 +265,9 @@ namespace WhisperAttack
         /// Handler for commands received by listener and then execute the associated VoiceAttack command.
         /// Run as a Task so that it does not block the main plugin thread.
         /// </summary>
-        /// <param name="vaProxy">The VoiceAttack proxy for calling VoiceAttack functions</param>
         /// <param name="client">The TCP client to read from the received command from</param>
-        /// <returns></returns>
-        private static async Task HandleWhisperAttackCommand(dynamic vaProxy, TcpClient client)
+        /// <returns>Runnable Task for the handling of commands</returns>
+        private static async Task HandleWhisperAttackCommand(TcpClient client)
         {
             await Task.Yield();
 
@@ -277,23 +279,23 @@ namespace WhisperAttack
                     int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     string receivedMessage = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                    vaProxy.WriteToLog($"Received WhisperAttack command: '{receivedMessage}'", "grey");
+                    _proxy.WriteToLog($"Received WhisperAttack command: '{receivedMessage}'", "grey");
 
                     // If the command exists within the VoiceAttack profile then run it.
                     // We check for the command first so that we can log this nicely vs. the generic
                     // external command failure.
-                    if (vaProxy.Command.Exists(receivedMessage))
+                    if (_proxy.Command.Exists(receivedMessage))
                     {
-                        vaProxy.Command.Execute(receivedMessage, true, true);
+                        _proxy.Command.Execute(receivedMessage, true, true);
                     }
                     else
                     {
-                        vaProxy.WriteToLog($"Command '{receivedMessage}' not found", "orange");
+                        _proxy.WriteToLog($"Command '{receivedMessage}' not found", "orange");
                     }
                 }
                 catch (Exception ex)
                 {
-                    vaProxy.WriteToLog($"Error reading command: {ex.Message}", "red");
+                    _proxy.WriteToLog($"Error reading command: {ex.Message}", "red");
                 }
             }
         }
