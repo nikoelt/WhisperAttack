@@ -6,3 +6,8 @@ dist
 build
 
 whisper_server.exe
+
+VoiceAttackPlugin/WhisperAttack/.vs
+VoiceAttackPlugin/WhisperAttack/bin
+VoiceAttackPlugin/WhisperAttack/obj
+VoiceAttackPlugin/WhisperAttack/WhisperAttack.csproj.user
