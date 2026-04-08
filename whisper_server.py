@@ -200,6 +200,8 @@ class WhisperServer:
         self.voiceattack_host = self.config.get_voiceattack_host()
         self.voiceattack_port = self.config.get_voiceattack_port()
 
+        self.language = self.config.get_whisper_language()
+
     def load_whisper_model(self, config: WhisperAttackConfiguration) -> None:
         """
         Loads the Whisper model.
@@ -318,8 +320,8 @@ class WhisperServer:
             start_time = datetime.now()
             segments, _ = self.model.transcribe(
                 audio_path,
-                language='en',
                 beam_size=5,
+                language=self.language,
                 suppress_tokens=[0,11,13,30,986],
                 initial_prompt=(
                     "This is aviation-related speech for DCS Digital Combat Simulator, "

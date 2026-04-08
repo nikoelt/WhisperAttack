@@ -181,6 +181,12 @@ class WhisperAttackConfiguration:
         tensor or standard, defaults to tensor
         """
         return self.config.get("whisper_core_type", "tensor")
+    
+    def get_whisper_language(self) -> str:
+        """
+        Returns language to be used for transcription
+        """
+        return self.config.get("whisper_language", "en")
 
     def get_theme(self) -> str:
         """
