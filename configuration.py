@@ -189,6 +189,21 @@ class WhisperAttackConfiguration:
         the name returned will be the current Windows theme.
         """
         return self.config.get("theme", THEME_DEFAULT)
+
+    def get_whisperattack_host(self) -> str:
+        """
+        Returns the IP address of the machine running WhisperAttack.
+        Default is 127.0.0.1 (the ip address for localhost).
+        """
+        return self.config.get("whisperattack_address", "127.0.0.1")
+    
+    def get_whisperattack_port(self) -> int:
+        """
+        Returns the port number to listen for incoming connections from WhisperAttack clients.
+        Default is 7798.
+        """
+        whisperattack_port = self.config.get("whisperattack_port", 7798)
+        return int(whisperattack_port)
     
     def get_voiceattack_host(self) -> str:
         """
@@ -202,9 +217,9 @@ class WhisperAttackConfiguration:
         """
         Returns the port number to connect to for VoiceAttack.
         Used for sending the transcribed text to the VoiceAttack plugin.
-        Default is 65433.
+        Default is 7799.
         """
-        voiceattack_port = self.config.get("voiceattack_port", 65433)
+        voiceattack_port = self.config.get("voiceattack_port", 7799)
         return int(voiceattack_port)
     
     def get_text_line_length(self) -> int:

@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace WhisperAttack
@@ -16,8 +14,10 @@ namespace WhisperAttack
 
         private static bool _isRunning = true;
         private static TcpListener _listener = null;
-        private static IPAddress _listenerIpAddress = IPAddress.Parse("127.0.0.1");
-        private static int _listenerPort = 65433;
+        private static IPAddress _voiceAttackListenerIpAddress = IPAddress.Parse("127.0.0.1");
+        private static int _voiceAttackListenerPort = 7799;
+        private static IPAddress _whisperAttackServerIpAddress = IPAddress.Parse("127.0.0.1");
+        private static int _whisperAttackServerPort = 7798;
 
         /// <summary>
         /// The plugin’s display name, required by the VoiceAttack plugin API.
@@ -34,7 +34,7 @@ namespace WhisperAttack
         /// <returns>The description.</returns>
         public static string VA_DisplayInfo()
         {
-            return "WhisperAttack Server Command plugin (v1.2.2)";
+            return "WhisperAttack Server Command plugin (v1.2.3)";
         }
 
         /// <summary>
@@ -64,27 +64,26 @@ namespace WhisperAttack
         {
             _proxy = vaProxy;
 
+            LoadConfiguration();
+            StartCommandListener();
+
             // Run a connection test to see if WhisperAttack is currently running and
             // listening for server commands.
             try
             {
-                // Configuration for connecting to the WhisperAttack server.
-                string server = "127.0.0.1";
-                int port = 65432;
-
-                using (TcpClient client = new TcpClient(server, port))
-                using (NetworkStream stream = client.GetStream())
+                using (TcpClient client = new TcpClient())
                 {
-                    vaProxy.WriteToLog("Connected to WhisperAttack server", "blue");
+                    client.Connect(_whisperAttackServerIpAddress, _whisperAttackServerPort);
+                    using (NetworkStream stream = client.GetStream())
+                    {
+                        vaProxy.WriteToLog($"Connected to WhisperAttack server on {_whisperAttackServerIpAddress}:{_whisperAttackServerPort}", "blue");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _proxy.WriteToLog($"Failed to connect to WhisperAttack server: {ex.Message}", "red");
+                _proxy.WriteToLog($"Failed to connect to WhisperAttack server on {_whisperAttackServerIpAddress}:{_whisperAttackServerPort}: {ex.Message}", "red");
             }
-
-            LoadConfiguration();
-            StartCommandListener();
         }
 
         /// <summary>
@@ -93,35 +92,35 @@ namespace WhisperAttack
         /// <param name="vaProxy">The VoiceAttack proxy for calling VoiceAttack functions</param>
         public static void VA_Invoke1(dynamic vaProxy)
         {
-            string server = "127.0.0.1";
-            int port = 65432;
-
             string contextinput = vaProxy.Context;
 
             try
             {
-                using (TcpClient client = new TcpClient(server, port))
-                using (NetworkStream stream = client.GetStream())
+                using (TcpClient client = new TcpClient())
                 {
-                    switch (contextinput)
+                    client.Connect(_whisperAttackServerIpAddress, _whisperAttackServerPort);
+                    using (NetworkStream stream = client.GetStream())
                     {
-                        case "Start Whisper Recording":
-                            {
-                                string command = "start"; // Command sent to whisper server
-                                byte[] data = Encoding.ASCII.GetBytes(command);
-                                stream.Write(data, 0, data.Length);
-                                _proxy.WriteToLog("Start WhisperAttack recording", "grey");
-                                break;
-                            }
+                        switch (contextinput)
+                        {
+                            case "Start Whisper Recording":
+                                {
+                                    string command = "start"; // Command sent to whisper server
+                                    byte[] data = Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                    _proxy.WriteToLog("Start WhisperAttack recording", "grey");
+                                    break;
+                                }
 
-                        case "Stop Whisper Recording":
-                            {
-                                string command = "stop"; // Command sent to whisper server
-                                byte[] data = Encoding.ASCII.GetBytes(command);
-                                stream.Write(data, 0, data.Length);
-                                _proxy.WriteToLog("Stop WhisperAttack recording", "grey");
-                                break;
-                            }
+                            case "Stop Whisper Recording":
+                                {
+                                    string command = "stop"; // Command sent to whisper server
+                                    byte[] data = Encoding.ASCII.GetBytes(command);
+                                    stream.Write(data, 0, data.Length);
+                                    _proxy.WriteToLog("Stop WhisperAttack recording", "grey");
+                                    break;
+                                }
+                        }
                     }
                 }
             }
@@ -141,15 +140,22 @@ namespace WhisperAttack
             _isRunning = false;
             _listener.Stop();
 
-            string server = "127.0.0.1";
-            int port = 65432;
-
-            using (TcpClient client = new TcpClient(server, port))
-            using (NetworkStream stream = client.GetStream())
+            try
             {
-                string command = "shutdown"; // Command sent to whisper server
-                byte[] data = Encoding.ASCII.GetBytes(command);
-                stream.Write(data, 0, data.Length);
+                using (TcpClient client = new TcpClient())
+                {
+                    client.Connect(_whisperAttackServerIpAddress, _whisperAttackServerPort);
+                    using (NetworkStream stream = client.GetStream())
+                    {
+                        string command = "shutdown"; // Command sent to whisper server
+                        byte[] data = Encoding.ASCII.GetBytes(command);
+                        stream.Write(data, 0, data.Length);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _proxy.WriteToLog($"Failed to send shutdown command to WhisperAttack server: {ex.Message}", "red");
             }
         }
 
@@ -192,28 +198,52 @@ namespace WhisperAttack
                         
                         if (!string.IsNullOrEmpty(key))
                         {
-                            if (key.Equals("listener_address"))
+                            if (key.Equals("voiceattack_listener_address"))
                             {
                                 // Check if the value provided is a valid IP address
                                 if (!IPAddress.TryParse(value, out IPAddress ipAddress))
                                 {
-                                    _proxy.WriteToLog($"Invalid listener ip address {value}, using default 127.0.0.1", "red");
+                                    _proxy.WriteToLog($"Invalid listener ip address {value}, using default {_voiceAttackListenerIpAddress}", "red");
                                 }
                                 else
                                 {
-                                    _listenerIpAddress = ipAddress;
+                                    _voiceAttackListenerIpAddress = ipAddress;
                                 }
                             }
-                            else if (key.Equals("listener_port"))
+                            else if (key.Equals("voiceattack_listener_port"))
                             {
                                 try
                                 {
                                     // Check if the listener port is a valid number
-                                    _listenerPort = int.Parse(value);
+                                    _voiceAttackListenerPort = int.Parse(value);
                                 }
                                 catch
                                 {
-                                    _proxy.WriteToLog($"Invalid listener port: {value}, using default 65433", "red");
+                                    _proxy.WriteToLog($"Invalid listener port: {value}, using default {_voiceAttackListenerPort}", "red");
+                                }
+                            }
+                            else if (key.Equals("whisperattack_server_address"))
+                            {
+                                // Check if the value provided is a valid IP address
+                                if (!IPAddress.TryParse(value, out IPAddress ipAddress))
+                                {
+                                    _proxy.WriteToLog($"Invalid WhisperAttack server ip address {value}, using default {_whisperAttackServerIpAddress}", "red");
+                                }
+                                else
+                                {
+                                    _whisperAttackServerIpAddress = ipAddress;
+                                }
+                            }
+                            else if (key.Equals("whisperattack_server_port"))
+                            {
+                                try
+                                {
+                                    // Check if the listener port is a valid number
+                                    _whisperAttackServerPort = int.Parse(value);
+                                }
+                                catch
+                                {
+                                    _proxy.WriteToLog($"Invalid WhisperAttack server port: {value}, using default {_whisperAttackServerPort}", "red");
                                 }
                             }
                             else
@@ -241,11 +271,11 @@ namespace WhisperAttack
         /// <returns>Runnable Task for the command listener</returns>
         private static async Task StartCommandListener()
         {
-            _proxy.WriteToLog($"Starting WhisperAttack listener on {_listenerIpAddress}:{_listenerPort}", "blue");
+            _proxy.WriteToLog($"Starting WhisperAttack listener on {_voiceAttackListenerIpAddress}:{_voiceAttackListenerPort}", "blue");
             
             try
             {
-                _listener = new TcpListener(new IPEndPoint(_listenerIpAddress, _listenerPort));
+                _listener = new TcpListener(new IPEndPoint(_voiceAttackListenerIpAddress, _voiceAttackListenerPort));
                 _listener.Start();
 
                 _proxy.WriteToLog($"WhisperAttack listener started", "blue");

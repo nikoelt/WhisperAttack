@@ -5,6 +5,8 @@ __MACOSX
 dist
 build
 
+__pycache__
+
 whisper_server.exe
 
 VoiceAttackPlugin/WhisperAttack/.vs
