@@ -19,12 +19,6 @@ from configuration import WhisperAttackConfiguration
 from writer import WhisperAttackWriter
 from theme import TAG_BLUE, TAG_GREEN, TAG_GREY, TAG_ORANGE, TAG_RED
 
-###############################################################################
-# CONFIG
-###############################################################################
-HOST = '127.0.0.1'
-PORT = 65432
-
 # Library to convert textual numbers to their numerical values
 t2d = text2digits.Text2Digits()
 
@@ -197,6 +191,8 @@ class WhisperServer:
         self.wave_file = None
         self.stream = None
 
+        self.whisperattack_host = self.config.get_whisperattack_host()
+        self.whisperattack_port = self.config.get_whisperattack_port()
         self.voiceattack_host = self.config.get_voiceattack_host()
         self.voiceattack_port = self.config.get_voiceattack_port()
 
@@ -424,11 +420,14 @@ class WhisperServer:
         Starts a socket server and listens for incoming commands.
         """
         self.load_whisper_model(self.config)
-
-        logging.info("Server started and listening on %s:%s", HOST, PORT)
-        self.writer.write(f"Server started and listening on {HOST}:{PORT}", TAG_GREEN)
+        
+        host = self.whisperattack_host
+        port = self.whisperattack_port
+        
+        logging.info("Server started and listening on %s:%s", host, port)
+        self.writer.write(f"Server started and listening on {host}:{port}", TAG_GREEN)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((HOST, PORT))
+            s.bind((host, port))
             s.listen()
             s.settimeout(1.0)
 
