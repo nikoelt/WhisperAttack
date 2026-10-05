@@ -21,7 +21,7 @@ from word_mappings import WhisperAttackWordMappings
 # This event is used to stop the server socket and shutdown.
 exit_event = threading.Event()
 
-APPLICATION_VERSION = "1.2.2"
+APPLICATION_VERSION = "1.2.3"
 
 # File paths for configuration, word mappings, and fuzzy words
 APPLICATION_PATH = ""
